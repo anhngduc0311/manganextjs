@@ -55,6 +55,9 @@ function getClient() {
       "Cloudflare R2 chưa được cấu hình đầy đủ trong .env (Thiếu R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, hoặc R2_SECRET_ACCESS_KEY)."
     );
   }
+  if (accountId.length !== 32) {
+    console.warn(`⚠️  [Cảnh báo]: R2_ACCOUNT_ID "${accountId}" có ${accountId.length} ký tự (chuẩn Cloudflare Account ID là 32 ký tự hex). Vui lòng kiểm tra lại Cloudflare Dashboard.`);
+  }
   return new S3Client({
     region: "auto",
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -66,7 +69,6 @@ function getClient() {
     requestHandler: new NodeHttpHandler({
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
-        servername: "r2.cloudflarestorage.com",
       }),
     }),
   });
@@ -196,6 +198,19 @@ async function main() {
       console.log("  node scripts/r2-backup.mjs download <remote-key> <destination-path>");
     }
   } catch (err) {
+    if (err && typeof err === "object") {
+      const errObj = err;
+      if (errObj.$response) {
+        console.error(`❌ [R2 Response Status]: HTTP ${errObj.$response.statusCode}`);
+      }
+      const msg = errObj.message || String(err);
+      if (msg.includes("XML parse error") || msg.includes("mismatched tags")) {
+        console.error("💡 [Nguyên nhân phổ biến]: Cloudflare R2 trả về trang lỗi HTML thay vì XML API response:");
+        console.error("   1. R2_ACCOUNT_ID trong .env chưa chính xác (phải là 32 ký tự hex từ Cloudflare Dashboard).");
+        console.error("   2. Tên Bucket (R2_BUCKET_NAME) không khớp hoặc chưa được tạo trên Cloudflare R2.");
+        console.error("   3. API Token chưa được cấp quyền Object Read & Write trên Bucket R2.");
+      }
+    }
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`❌ [R2 Backup Error]: ${msg}`);
     process.exit(1);

@@ -45,7 +45,6 @@ function getClient(): S3Client {
     requestHandler: new NodeHttpHandler({
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
-        servername: "r2.cloudflarestorage.com",
       }),
     }),
   });
