@@ -1,26 +1,65 @@
-FROM node:20-alpine AS base
+# ==========================================
+# Stage 1: Build & Bundle with esbuild
+# ==========================================
+FROM node:20-alpine AS builder
 
-# Install OpenSSL & libc6 for Prisma engine support on Alpine
 RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Install npm dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy Prisma schema and generate client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source code and scripts
 COPY tsconfig.json ./
 COPY src ./src
 COPY scripts ./scripts
-COPY workers ./workers
+
+# Bundle crawler script into single lightweight JS file
+RUN npx esbuild scripts/crawl-mangadex.ts \
+  --bundle \
+  --platform=node \
+  --target=node20 \
+  --outfile=dist/crawler.js \
+  --external:@prisma/client \
+  --external:@prisma/adapter-pg \
+  --external:pg \
+  --external:meilisearch \
+  --external:pino \
+  --external:dotenv
+
+# ==========================================
+# Stage 2: Minimal Production Runtime
+# ==========================================
+FROM node:20-alpine AS runner
+
+RUN apk add --no-cache libc6-compat openssl
+
+WORKDIR /app
+
+# Install only the minimal required runtime packages (no Next.js, React, Tailwind, Vitest, etc.)
+RUN npm init -y && \
+    npm install --omit=dev --no-package-lock \
+      @prisma/client@6.10.0 \
+      @prisma/adapter-pg@6.19.3 \
+      pg@8.23.0 \
+      meilisearch@0.62.0 \
+      pino@9.4.0 \
+      dotenv@16.4.7 && \
+    npm cache clean --force
+
+# Copy generated Prisma engine & client from builder
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma
+
+# Copy bundled crawler script
+COPY --from=builder /app/dist/crawler.js ./dist/crawler.js
 
 ENV NODE_ENV=production
 ENV CHECKPOINT_FILE=/app/.checkpoint/.mangadex-checkpoint.json
 
-# Default command: runs continuous crawler
-CMD ["npx", "tsx", "scripts/crawl-mangadex.ts", "--continuous"]
+# Run directly with pure node (fast startup, low RAM, tiny footprint)
+CMD ["node", "dist/crawler.js", "--continuous"]
