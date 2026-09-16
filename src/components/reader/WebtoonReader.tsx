@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { useReaderStore } from "@/stores/reader-store";
+import { ReaderPageImage } from "./ReaderPageImage";
 import type { ChapterPageDTO } from "@/types";
 
 export interface WebtoonReaderProps {
@@ -34,17 +34,15 @@ export function WebtoonReader({ pages }: WebtoonReaderProps) {
     >
       {pages.map((page, index) => (
         <div key={`page-${page.pageIndex}-${index}`} className="relative w-full overflow-hidden bg-zinc-950">
-          <Image
+          <ReaderPageImage
             src={page.imageUrl}
-            alt={`Trang ${page.pageIndex}`}
+            alt={`Trang ${page.pageIndex + 1}`}
+            pageIndex={page.pageIndex}
             width={1000}
             height={1400}
             priority={index < 3}
             sizes="(max-width: 768px) 100vw, 1100px"
-            className="h-auto w-full object-contain select-none pointer-events-none"
-            loading={index < 3 ? undefined : "lazy"}
-            unoptimized
-            referrerPolicy="no-referrer"
+            className="h-auto w-full object-contain select-none"
           />
         </div>
       ))}

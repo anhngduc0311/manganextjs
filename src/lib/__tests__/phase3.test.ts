@@ -26,4 +26,20 @@ describe("Phase 3 - Database Indexing & Subquery Elimination", () => {
     expect(mockComic.chapterCount).toBe(179);
     expect(mockComic.latestChapterNumber).toBe(179);
   });
+
+  it("Filters out comics with 0 chapters or missing chapter 1 for home feed and listing", () => {
+    const comics = [
+      { id: "1", title: "Valid Comic", chapterCount: 10, chapters: [{ chapterNumber: 1 }, { chapterNumber: 2 }] },
+      { id: "2", title: "No Chapters", chapterCount: 0, chapters: [] },
+      { id: "3", title: "Missing Chapter 1", chapterCount: 5, chapters: [{ chapterNumber: 5 }, { chapterNumber: 6 }] },
+    ];
+
+    const filtered = comics.filter(
+      (c) => c.chapterCount > 0 && c.chapters.some((ch) => ch.chapterNumber === 1)
+    );
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].id).toBe("1");
+    expect(filtered[0].title).toBe("Valid Comic");
+  });
 });

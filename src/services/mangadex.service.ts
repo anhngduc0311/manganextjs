@@ -511,9 +511,14 @@ export const mangadexService = {
     const fileList = quality === "dataSaver" && chapter.dataSaver?.length ? chapter.dataSaver : chapter.data;
     const subFolder = quality === "dataSaver" && chapter.dataSaver?.length ? "data-saver" : "data";
 
+    // Use official permanent uploads.mangadex.org CDN to prevent dead images when @home nodes expire
+    const cdnBase = baseUrl.includes(".mangadex.network")
+      ? "https://uploads.mangadex.org"
+      : baseUrl;
+
     const pages = fileList.map((fileName, index) => ({
       pageIndex: index,
-      imageUrl: `${baseUrl}/${subFolder}/${hash}/${fileName}`,
+      imageUrl: `${cdnBase}/${subFolder}/${hash}/${fileName}`,
     }));
 
     return {

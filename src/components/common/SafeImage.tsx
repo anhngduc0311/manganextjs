@@ -51,20 +51,21 @@ export function SafeImage({
 
   const handleError = () => {
     if (errorCount === 0) {
-      // Step 1: Retry loading directly from CDN without Next.js proxy (bypasses server timeouts)
+      // Step 1: Retry loading directly from CDN without Next.js proxy
       setErrorCount(1);
       setForceUnoptimized(true);
     } else if (errorCount === 1 && typeof imgSrc === "string" && imgSrc.endsWith(".512.jpg")) {
       // Step 2: If 512 thumbnail failed, try raw uncompressed cover
       setErrorCount(2);
       setImgSrc(imgSrc.replace(/\.512\.jpg$/, ""));
-    } else if (errorCount === 1 && typeof imgSrc === "string" && !imgSrc.endsWith(".512.jpg") && imgSrc.includes("uploads.mangadex.org")) {
-      // Step 2b: If raw failed, try 512 thumbnail
-      setErrorCount(2);
-      setImgSrc(`${imgSrc}.512.jpg`);
-    } else {
-      // Step 3: Final fallback to default placeholder
+    } else if (errorCount <= 2 && typeof imgSrc === "string" && (imgSrc.includes("mangadex.org") || imgSrc.includes("mangadex.network"))) {
+      // Step 3: Try Local Server Proxy to bypass ISP/CORS blocks
       setErrorCount(3);
+      setImgSrc(`/api/proxy/image?url=${encodeURIComponent(normalizeImageUrl(src))}`);
+      setForceUnoptimized(true);
+    } else {
+      // Step 4: Final fallback to default placeholder
+      setErrorCount(4);
       setImgSrc(fallbackSrc);
       setForceUnoptimized(true);
     }

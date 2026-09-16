@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { useReaderStore } from "@/stores/reader-store";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ReaderPageImage } from "./ReaderPageImage";
 import type { ChapterPageDTO } from "@/types";
 
 export interface PageFlipReaderProps {
@@ -53,15 +53,14 @@ export function PageFlipReader({ pages, onNextChapter, onPrevChapter }: PageFlip
         style={{ maxWidth: `${targetMaxWidth}px` }}
       >
         {imageSrc ? (
-          <Image
+          <ReaderPageImage
             src={imageSrc}
             alt={`Trang ${safePage}`}
+            pageIndex={safePage - 1}
             fill
             priority
             sizes="(max-width: 768px) 100vw, 800px"
             className="object-contain select-none"
-            unoptimized
-            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-500">Trang {safePage}</div>

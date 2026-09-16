@@ -39,9 +39,18 @@ export interface ListComicsParams {
 export const comicService = {
   getHomeFeed: cache(async (): Promise<{ hot: ComicCardDTO[]; latest: ComicCardDTO[] }> => {
     return cacheService.cached("home-feed", ["home-feed", "comic-list"], 60, async () => {
+      const where: Prisma.ComicWhereInput = {
+        chapterCount: { gt: 0 },
+        chapters: {
+          some: {
+            chapterNumber: 1,
+          },
+        },
+      };
+
       const [hot, latest] = await Promise.all([
-        prisma.comic.findMany({ orderBy: { views: "desc" }, take: 12, include: cardInclude }),
-        prisma.comic.findMany({ orderBy: { updatedAt: "desc" }, take: 12, include: cardInclude }),
+        prisma.comic.findMany({ where, orderBy: { views: "desc" }, take: 12, include: cardInclude }),
+        prisma.comic.findMany({ where, orderBy: { updatedAt: "desc" }, take: 12, include: cardInclude }),
       ]);
       return { hot: hot.map(mapCard), latest: latest.map(mapCard) };
     });
@@ -86,7 +95,14 @@ export const comicService = {
     const cacheKey = `comics:list:${genreKey}:${statusKey}:${sortKey}:${page}:${perPage}`;
 
     return cacheService.cached(cacheKey, ["comic-list"], 60, async () => {
-      const where: Prisma.ComicWhereInput = {};
+      const where: Prisma.ComicWhereInput = {
+        chapterCount: { gt: 0 },
+        chapters: {
+          some: {
+            chapterNumber: 1,
+          },
+        },
+      };
       if (params.genres && params.genres.length > 0) {
         where.categories = { some: { category: { slug: { in: params.genres } } } };
       }
@@ -124,7 +140,19 @@ export const comicService = {
       const orderBy: Prisma.ComicOrderByWithRelationInput =
         period === "daily" ? { views: "desc" } : period === "weekly" ? { weeklyViews: "desc" } : { monthlyViews: "desc" };
 
-      const items = await prisma.comic.findMany({ orderBy, take: 10, include: cardInclude });
+      const items = await prisma.comic.findMany({
+        where: {
+          chapterCount: { gt: 0 },
+          chapters: {
+            some: {
+              chapterNumber: 1,
+            },
+          },
+        },
+        orderBy,
+        take: 10,
+        include: cardInclude,
+      });
       return items.map(mapCard);
     });
   }),
