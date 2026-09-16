@@ -1,0 +1,63 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js Build Output
+/.next/
+/out/
+/build
+/dist
+
+# Environment variables & secrets (Giữ lại .env.example)
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+!.env.example
+
+# Debug & Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic & Coverage
+coverage/
+.nyc_output/
+
+# Next.js & Turbopack
+.turbo/
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma
+/prisma/*.db
+/prisma/*.db-journal
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.pem
+
+# IDE & Editor configs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary and cache folders
+.temp/
+.cache/
