@@ -122,6 +122,24 @@ check_prerequisites() {
         fi
     fi
 
+    # Check and Auto-configure Swap (Crucial for fast Next.js builds on 1GB-2GB VPS)
+    if command -v free >/dev/null 2>&1 && [ -f /proc/swaps ]; then
+        local total_swap
+        total_swap=$(free -m | awk '/Swap:/ {print $2}')
+        if [ "${total_swap:-0}" -lt 1024 ]; then
+            if [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
+                log_info "Phát hiện hệ thống có ít hơn 1GB Swap RAM. Đang tự động cấp 2GB Swap để tăng tốc build Next.js..."
+                if [ ! -f /swapfile ]; then
+                    sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null || true
+                    sudo chmod 600 /swapfile 2>/dev/null || true
+                    sudo mkswap /swapfile >/dev/null 2>&1 || true
+                fi
+                sudo swapon /swapfile 2>/dev/null || true
+                log_success "Đã kích hoạt Swap RAM thành công (Giúp quá trình compile Next.js siêu nhanh)!"
+            fi
+        fi
+    fi
+
     log_success "Docker và Docker Compose ($DOCKER_COMPOSE) đã sẵn sàng."
 }
 

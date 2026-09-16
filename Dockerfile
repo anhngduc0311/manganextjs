@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit
 
 # ==========================================
 # Stage 2: Builder
@@ -24,6 +24,7 @@ RUN npx prisma generate
 # Build Next.js in production mode
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run build
 
 # ==========================================
