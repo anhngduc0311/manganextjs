@@ -124,6 +124,11 @@ export const revalidateSchema = z.object({
   paths: z.array(z.string().min(1)).max(50).default([]),
 });
 
+export const viewSchema = z.object({
+  comicId: z.string().uuid(),
+  chapterId: z.string().uuid(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
@@ -131,3 +136,4 @@ export type RatingInput = z.infer<typeof ratingSchema>;
 export type ComicUpsertInput = z.infer<typeof comicUpsertSchema>;
 export type ChapterUpsertInput = z.infer<typeof chapterUpsertSchema>;
 export type IngestInput = z.infer<typeof ingestSchema>;
+export type ViewInput = z.infer<typeof viewSchema>;

@@ -179,7 +179,21 @@ export async function upsertChapterAction(_prev: ActionResult<{ id: string }> | 
       },
       select: { id: true, comicId: true },
     });
-    await tx.comic.update({ where: { id: data.comicId }, data: { updatedAt: new Date() } });
+    const chapterCount = await tx.chapter.count({ where: { comicId: data.comicId } });
+    const latest = await tx.chapter.findFirst({
+      where: { comicId: data.comicId },
+      orderBy: { chapterNumber: "desc" },
+      select: { chapterNumber: true },
+    });
+
+    await tx.comic.update({
+      where: { id: data.comicId },
+      data: {
+        updatedAt: new Date(),
+        chapterCount,
+        latestChapterNumber: latest?.chapterNumber ?? data.chapterNumber,
+      },
+    });
     return upserted;
   });
 
@@ -187,6 +201,7 @@ export async function upsertChapterAction(_prev: ActionResult<{ id: string }> | 
   if (comic) {
     revalidateTag(`comic-detail-${comic.slug}`);
     revalidateTag("home-feed");
+    revalidateTag("comic-list");
   }
   revalidatePath("/admin/chapters");
   return { ok: true, data: { id: chapter.id } };
@@ -195,8 +210,36 @@ export async function upsertChapterAction(_prev: ActionResult<{ id: string }> | 
 export async function deleteChapterAction(chapterId: string): Promise<ActionResult> {
   const authz = await requireRole(["MODERATOR", "ADMIN"]);
   if (!authz.ok) return { ok: false, error: authz.error };
-  const chapter = await prisma.chapter.delete({ where: { id: chapterId }, select: { comic: { select: { slug: true } } } });
-  if (chapter.comic) revalidateTag(`comic-detail-${chapter.comic.slug}`);
+
+  const chapter = await prisma.$transaction(async (tx) => {
+    const ch = await tx.chapter.delete({
+      where: { id: chapterId },
+      select: { comicId: true, comic: { select: { slug: true } } },
+    });
+
+    const chapterCount = await tx.chapter.count({ where: { comicId: ch.comicId } });
+    const latest = await tx.chapter.findFirst({
+      where: { comicId: ch.comicId },
+      orderBy: { chapterNumber: "desc" },
+      select: { chapterNumber: true },
+    });
+
+    await tx.comic.update({
+      where: { id: ch.comicId },
+      data: {
+        chapterCount,
+        latestChapterNumber: latest?.chapterNumber ?? null,
+      },
+    });
+
+    return ch;
+  });
+
+  if (chapter.comic) {
+    revalidateTag(`comic-detail-${chapter.comic.slug}`);
+    revalidateTag("home-feed");
+    revalidateTag("comic-list");
+  }
   revalidatePath("/admin/chapters");
   return { ok: true };
 }
@@ -240,5 +283,225 @@ export async function deleteGenreAction(genreId: string): Promise<ActionResult> 
   revalidateTag("categories");
   revalidatePath("/admin/genres");
   return { ok: true };
+}
+
+export async function scanMangaDexUpdatesAction(limit = 20): Promise<ActionResult<{ scannedCount: number; updatedCount: number; newChaptersCount: number }>> {
+  const authz = await requireRole(["MODERATOR", "ADMIN"]);
+  if (!authz.ok) return { ok: false, error: authz.error };
+
+  try {
+    const { mangadexService, translateMangaDexGenre, sleep } = await import("@/services/mangadex.service");
+    const { toUnaccent } = await import("@/lib/text-normalizer");
+    const { notificationService } = await import("@/services/notification.service");
+    const { cacheService } = await import("@/services/cache.service");
+
+    const mangaRes = await mangadexService.getVietnameseMangaList({
+      offset: 0,
+      limit: Math.min(50, Math.max(1, limit)),
+      order: "latest",
+    });
+
+    const mangaList = mangaRes.data;
+    let totalUpdatedComics = 0;
+    let totalNewChapters = 0;
+
+    for (const rawItem of mangaList) {
+      const manga = mangadexService.normalizeManga(rawItem);
+
+      // Categories
+      const categoryIds: string[] = [];
+      const seenSlugs = new Set<string>();
+
+      for (const rawTag of manga.categories) {
+        if (!rawTag || !rawTag.trim()) continue;
+        const vietnameseName = translateMangaDexGenre(rawTag);
+        const slug = toSlug(vietnameseName);
+        if (!slug || seenSlugs.has(slug)) continue;
+        seenSlugs.add(slug);
+
+        try {
+          const category = await prisma.category.upsert({
+            where: { slug },
+            create: { name: vietnameseName, slug, description: `Thể loại truyện tranh ${vietnameseName}` },
+            update: { name: vietnameseName },
+            select: { id: true },
+          });
+          categoryIds.push(category.id);
+        } catch {}
+      }
+
+      // Find or create Comic
+      let comicSlug = toSlug(manga.title);
+      let existingComic = await prisma.comic.findUnique({
+        where: { slug: comicSlug },
+        select: { id: true, slug: true, title: true },
+      });
+
+      if (!existingComic) {
+        existingComic = await prisma.comic.findFirst({
+          where: { titleUnaccent: toUnaccent(manga.title) },
+          select: { id: true, slug: true, title: true },
+        });
+      }
+
+      if (!existingComic) {
+        comicSlug = `${toSlug(manga.title)}-${Date.now().toString().slice(-4)}`;
+      } else {
+        comicSlug = existingComic.slug;
+      }
+
+      const comic = await prisma.comic.upsert({
+        where: { slug: comicSlug },
+        create: {
+          title: manga.title,
+          titleUnaccent: toUnaccent(manga.title),
+          slug: comicSlug,
+          otherNames: manga.otherNames || null,
+          author: manga.author || null,
+          status: manga.status,
+          coverImage: manga.coverUrl,
+          description: manga.description || `Đọc truyện ${manga.title} bản dịch tiếng Việt mới nhất online tại TruyenKomi.`,
+          categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+        },
+        update: {
+          title: manga.title,
+          titleUnaccent: toUnaccent(manga.title),
+          otherNames: manga.otherNames || null,
+          author: manga.author || null,
+          status: manga.status,
+          coverImage: manga.coverUrl,
+          description: manga.description || undefined,
+          updatedAt: new Date(),
+          categories: {
+            deleteMany: {},
+            create: categoryIds.map((categoryId) => ({ categoryId })),
+          },
+        },
+        select: { id: true, slug: true, title: true },
+      });
+
+      const chapters = await mangadexService.getVietnameseChapters(manga.id);
+      if (chapters.length === 0) continue;
+
+      const existingChapters = await prisma.chapter.findMany({
+        where: { comicId: comic.id },
+        select: { chapterNumber: true, _count: { select: { pages: true } } },
+      });
+
+      const existingPagesMap = new Map<number, number>();
+      for (const ech of existingChapters) {
+        existingPagesMap.set(ech.chapterNumber, ech._count.pages);
+      }
+
+      const missingChapters = chapters.filter((ch) => {
+        const pCount = existingPagesMap.get(ch.chapterNumber);
+        return pCount === undefined || pCount === 0;
+      });
+
+      if (missingChapters.length === 0) continue;
+
+      let newlySyncedCount = 0;
+
+      for (const ch of missingChapters) {
+        try {
+          const atHomeData = await mangadexService.getChapterPages(ch.id, "original");
+          const pages = atHomeData.pages;
+          if (pages.length === 0) continue;
+
+          await prisma.$transaction(async (tx) => {
+            await tx.chapter.upsert({
+              where: {
+                comicId_chapterNumber: {
+                  comicId: comic.id,
+                  chapterNumber: ch.chapterNumber,
+                },
+              },
+              create: {
+                comicId: comic.id,
+                chapterNumber: ch.chapterNumber,
+                title: ch.title || `Chương ${ch.chapterNumber}`,
+                views: BigInt(Math.floor(Math.random() * 200) + 10),
+                pages: {
+                  create: pages.map((p) => ({
+                    pageIndex: p.pageIndex,
+                    imageUrl: p.imageUrl,
+                  })),
+                },
+              },
+              update: {
+                title: ch.title || `Chương ${ch.chapterNumber}`,
+                pages: {
+                  deleteMany: {},
+                  create: pages.map((p) => ({
+                    pageIndex: p.pageIndex,
+                    imageUrl: p.imageUrl,
+                  })),
+                },
+              },
+            });
+          });
+
+          newlySyncedCount++;
+          await sleep(350);
+        } catch (err) {
+          console.warn(`[scanMangaDexUpdatesAction] Lỗi chương ${ch.chapterNumber}:`, err);
+        }
+      }
+
+      if (newlySyncedCount > 0) {
+        totalUpdatedComics++;
+        totalNewChapters += newlySyncedCount;
+
+        const chapterCount = await prisma.chapter.count({ where: { comicId: comic.id } });
+        const latest = await prisma.chapter.findFirst({
+          where: { comicId: comic.id },
+          orderBy: { chapterNumber: "desc" },
+          select: { chapterNumber: true },
+        });
+
+        await prisma.comic.update({
+          where: { id: comic.id },
+          data: {
+            updatedAt: new Date(),
+            chapterCount,
+            latestChapterNumber: latest?.chapterNumber ?? null,
+          },
+        });
+
+        try {
+          await notificationService.notifyFollowers(comic.id, {
+            title: `Chương mới: ${comic.title}`,
+            message: `Chương ${latest?.chapterNumber} vừa được cập nhật. Đọc ngay!`,
+            linkUrl: `/comics/${comic.slug}/chuong-${latest?.chapterNumber}`,
+          });
+        } catch {}
+
+        try {
+          await Promise.allSettled([
+            cacheService.del(`comic:${comic.slug}`, `comic:${comic.id}:chapters`, "home-feed"),
+            cacheService.scanDelete(`chapter:*`),
+            cacheService.scanDelete("comics:list:*"),
+          ]);
+        } catch {}
+      }
+    }
+
+    revalidateTag("home-feed");
+    revalidateTag("comic-list");
+    revalidatePath("/admin/comics");
+    revalidatePath("/admin/chapters");
+
+    return {
+      ok: true,
+      data: {
+        scannedCount: mangaList.length,
+        updatedCount: totalUpdatedComics,
+        newChaptersCount: totalNewChapters,
+      },
+    };
+  } catch (err: any) {
+    console.error("[scanMangaDexUpdatesAction Error]:", err);
+    return { ok: false, error: err.message || "Lỗi khi quét cập nhật truyện" };
+  }
 }
 

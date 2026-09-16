@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { ingestSchema } from "@/types/schemas";
 import { optimizeToWebP } from "../../../workers/image-processor";
 import sharp from "sharp";
@@ -128,6 +128,86 @@ describe("MangaDex Dynamic Category Translation & Extraction", () => {
     expect(normalized.categories).toContain("Fantasy");
     expect(normalized.categories).toContain("Shounen");
     expect(normalized.categories).toContain("Manhwa");
+  });
+});
+
+describe("Crawler Worker - processChapterJob", () => {
+  it("processes chapter payload, handles upsert transaction, notification and cache invalidation", async () => {
+    const { processChapterJob } = await import("../../../workers/crawler.worker");
+    const { prisma } = await import("@/lib/prisma");
+
+    // Mock prisma transaction
+    const mockChapter = { id: "ch-uuid-123", comicId: "comic-uuid-1", chapterNumber: 10 };
+    const mockTx = {
+      chapter: {
+        upsert: vi.fn().mockResolvedValue(mockChapter),
+        count: vi.fn().mockResolvedValue(10),
+        findFirst: vi.fn().mockResolvedValue({ chapterNumber: 10 }),
+      },
+      comic: {
+        update: vi.fn().mockResolvedValue({ id: "comic-uuid-1" }),
+      },
+    };
+
+    const spyTransaction = vi.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) => {
+      return cb(mockTx);
+    });
+
+    const result = await processChapterJob({
+      data: {
+        comicId: "comic-uuid-1",
+        comicSlug: "test-manga",
+        comicTitle: "Test Manga",
+        chapterNumber: 10,
+        title: "Chapter 10 Title",
+        sourcePageUrls: ["https://example.com/p1.jpg", "https://example.com/p2.jpg"],
+      },
+    });
+
+    expect(result.chapterId).toBe("ch-uuid-123");
+    expect(result.pagesCount).toBe(2);
+    expect(spyTransaction).toHaveBeenCalled();
+    expect(mockTx.chapter.upsert).toHaveBeenCalled();
+    expect(mockTx.comic.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "comic-uuid-1" },
+        data: expect.objectContaining({
+          chapterCount: 10,
+          latestChapterNumber: 10,
+        }),
+      })
+    );
+
+    spyTransaction.mockRestore();
+  });
+
+  it("skips processing and image download if chapter already exists with pages", async () => {
+    const { processChapterJob } = await import("../../../workers/crawler.worker");
+    const { prisma } = await import("@/lib/prisma");
+
+    const spyFindUnique = vi.spyOn(prisma.chapter, "findUnique").mockResolvedValue({
+      id: "existing-ch-id",
+      _count: { pages: 15 },
+    } as any);
+
+    const spyTransaction = vi.spyOn(prisma, "$transaction");
+
+    const result = await processChapterJob({
+      data: {
+        comicId: "comic-1",
+        comicSlug: "manga-slug",
+        comicTitle: "Manga Title",
+        chapterNumber: 5,
+        sourcePageUrls: ["https://example.com/p1.jpg"],
+      },
+    });
+
+    expect(result.chapterId).toBe("existing-ch-id");
+    expect(result.pagesCount).toBe(15);
+    expect(spyTransaction).not.toHaveBeenCalled();
+
+    spyFindUnique.mockRestore();
+    spyTransaction.mockRestore();
   });
 });
 

@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { commentService } from "@/services/comment.service";
 import { checkRateLimit, writeLimiter } from "@/lib/rate-limiter";
 import { commentSchema } from "@/types/schemas";
-import type { ActionResult } from "@/types";
+import type { ActionResult, CommentDTO } from "@/types";
 
 async function clientIp(): Promise<string> {
   const h = await headers();
@@ -18,7 +18,7 @@ export async function addCommentAction(input: {
   chapterId?: string | null;
   content: string;
   parentId?: string | null;
-}): Promise<ActionResult> {
+}): Promise<ActionResult<CommentDTO>> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Bạn cần đăng nhập để bình luận" };
 
@@ -29,15 +29,15 @@ export async function addCommentAction(input: {
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
 
   try {
-    await commentService.create({
+    const created = await commentService.create({
       userId: session.user.id,
       comicId: parsed.data.comicId,
       chapterId: parsed.data.chapterId ?? null,
       content: parsed.data.content,
       parentId: parsed.data.parentId ?? null,
     });
-    revalidatePath("/comics");
-    return { ok: true };
+    revalidatePath("/comics", "layout");
+    return { ok: true, data: created };
   } catch {
     return { ok: false, error: "Không thể gửi bình luận, thử lại sau" };
   }

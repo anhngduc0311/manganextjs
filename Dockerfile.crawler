@@ -28,7 +28,9 @@ RUN npx esbuild scripts/crawl-mangadex.ts \
   --external:pg \
   --external:meilisearch \
   --external:pino \
-  --external:dotenv
+  --external:dotenv \
+  --external:next \
+  --external:@opentelemetry/api
 
 # ==========================================
 # Stage 2: Minimal Production Runtime

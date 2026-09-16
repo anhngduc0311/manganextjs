@@ -6,14 +6,19 @@
  *   npm run crawl:mangadex -- [options]
  * 
  * Options:
- *   --limit=<number>     Max number of manga to crawl (default: 10)
+ *   --mode=<mode>        Mode: hybrid (default in daemon), updates (only new updates), backlog (checkpoint sync)
+ *   --updates-limit=<num> Max number of updated manga to check in updates mode (default: 20)
+ *   --limit=<number>     Max number of manga to crawl for backlog (default: 20)
  *   --all                Crawl all available Vietnamese manga on MangaDex
  *   --order=<order>      Order: latest (default), created, updated
  *   --quality=<quality>  Quality: original (default), dataSaver
  *   --skip-existing      Skip manga if it already exists with chapters
+ *   --force              Force re-download all chapters & pages even if they exist
  *   --resume             Resume from last saved checkpoint (.mangadex-checkpoint.json)
  *   --manga=<id>         Crawl a specific MangaDex Manga UUID
  *   --max-chapters=<num> Limit max chapters per manga (e.g. --max-chapters=5)
+ *   --continuous         Run continuously as a background daemon
+ *   --interval=<minutes> Interval in minutes between crawl cycles (default: 10)
  */
 
 import fs from "fs";
@@ -81,9 +86,12 @@ const hasFlag = (name: string): boolean => args.includes(`--${name}`);
 
 const isContinuous = hasFlag("continuous") || process.env.CRAWLER_CONTINUOUS === "true";
 const intervalMinutes = parseInt(getArg("interval", process.env.CRAWLER_INTERVAL_MINUTES || "10"), 10);
+const modeArg = getArg("mode", process.env.CRAWLER_MODE || (isContinuous ? "hybrid" : "backlog")) as "updates" | "backlog" | "hybrid";
+const updatesLimitArg = parseInt(getArg("updates-limit", process.env.CRAWLER_UPDATES_LIMIT || "20"), 10);
 const isAll = hasFlag("all") || process.env.CRAWLER_ALL === "true";
-const isResume = hasFlag("resume") || process.env.CRAWLER_RESUME === "true";
+const isResume = hasFlag("resume") || process.env.CRAWLER_RESUME === "true" || isContinuous;
 const isSkipExisting = hasFlag("skip-existing") || process.env.CRAWLER_SKIP_EXISTING === "true";
+const isForce = hasFlag("force") || process.env.CRAWLER_FORCE === "true";
 const targetMangaId = getArg("manga", process.env.CRAWLER_MANGA_ID || "");
 const orderArg = (getArg("order", process.env.CRAWLER_ORDER || "latest") as "latest" | "created" | "updated");
 const qualityArg = (getArg("quality", process.env.CRAWLER_QUALITY || "original") as "original" | "dataSaver");
@@ -149,9 +157,10 @@ async function syncSingleManga(
   options: {
     quality: "original" | "dataSaver";
     skipExisting: boolean;
+    force?: boolean;
     maxChapters?: number;
   }
-): Promise<{ success: boolean; chaptersCount: number; pagesCount: number }> {
+): Promise<{ success: boolean; chaptersCount: number; pagesCount: number; newChaptersCount?: number }> {
   console.log(`\n=============================================================`);
   console.log(`📚 Đang xử lý truyện: "${manga.title}"`);
   console.log(`   MangaDex ID: ${manga.id}`);
@@ -177,7 +186,7 @@ async function syncSingleManga(
     });
   }
 
-  if (existingComic && options.skipExisting && existingComic._count.chapters > 0) {
+  if (existingComic && options.skipExisting && existingComic._count.chapters > 0 && !options.force) {
     console.log(`⏭️ Truyện "${manga.title}" đã tồn tại trong DB (${existingComic._count.chapters} chương). Bỏ qua do --skip-existing.`);
     return { success: true, chaptersCount: existingComic._count.chapters, pagesCount: 0 };
   }
@@ -237,40 +246,59 @@ async function syncSingleManga(
     chapters = chapters.slice(0, options.maxChapters);
   }
 
-  console.log(`📖 Tìm thấy ${chapters.length} chương tiếng Việt. Bắt đầu lấy API link ảnh từng trang...`);
+  // 5. Pre-fetch existing chapters for this comic to avoid re-crawling
+  const existingChapters = await prisma.chapter.findMany({
+    where: { comicId: comic.id },
+    select: {
+      chapterNumber: true,
+      _count: { select: { pages: true } },
+    },
+  });
+
+  const existingPagesMap = new Map<number, number>();
+  for (const ech of existingChapters) {
+    existingPagesMap.set(ech.chapterNumber, ech._count.pages);
+  }
+
+  // Check if all chapters already exist with pages
+  const missingOrEmptyChapters = chapters.filter((ch) => {
+    if (options.force) return true;
+    const pageCount = existingPagesMap.get(ch.chapterNumber);
+    return pageCount === undefined || pageCount === 0;
+  });
+
+  if (missingOrEmptyChapters.length === 0 && !options.force) {
+    console.log(`⚡ Toàn bộ ${chapters.length} chương của truyện "${manga.title}" đã có trong DB với đầy đủ trang ảnh. Bỏ qua cào lại.`);
+    const totalExistingPages = existingChapters.reduce((sum, c) => sum + c._count.pages, 0);
+    return { success: true, chaptersCount: existingChapters.length, pagesCount: totalExistingPages };
+  }
+
+  console.log(`📖 Tìm thấy ${chapters.length} chương (${missingOrEmptyChapters.length} chương mới cần tải ảnh). Bắt đầu xử lý...`);
 
   let totalPagesSynced = 0;
   let chaptersSynced = 0;
+  let newlySyncedCount = 0;
 
   for (let i = 0; i < chapters.length; i++) {
     const ch = chapters[i];
     const progressStr = `[${i + 1}/${chapters.length}]`;
+    const existingPageCount = existingPagesMap.get(ch.chapterNumber);
+
+    // Skip if chapter already exists in DB with pages
+    if (existingPageCount !== undefined && existingPageCount > 0 && !options.force) {
+      console.log(`  ${progressStr} ⏩ Chương ${ch.chapterNumber}: Đã có ${existingPageCount} trang trong DB. Bỏ qua.`);
+      chaptersSynced++;
+      totalPagesSynced += existingPageCount;
+      continue;
+    }
 
     try {
-      // Check if chapter already exists in DB with pages
-      const existingChapter = await prisma.chapter.findUnique({
-        where: {
-          comicId_chapterNumber: {
-            comicId: comic.id,
-            chapterNumber: ch.chapterNumber,
-          },
-        },
-        include: { _count: { select: { pages: true } } },
-      });
-
-      if (existingChapter && existingChapter._count.pages > 0 && options.skipExisting) {
-        console.log(`  ${progressStr} Chương ${ch.chapterNumber}: Đã có ${existingChapter._count.pages} trang. Bỏ qua.`);
-        chaptersSynced++;
-        totalPagesSynced += existingChapter._count.pages;
-        continue;
-      }
-
       // Fetch pages from MangaDex @Home Network
       const atHomeData = await mangadexService.getChapterPages(ch.id, options.quality);
       const pages = atHomeData.pages;
 
       if (pages.length === 0) {
-        console.warn(`  ${progressStr} Chương ${ch.chapterNumber}: Không có trang ảnh nào!`);
+        console.warn(`  ${progressStr} ⚠️ Chương ${ch.chapterNumber}: Không có trang ảnh nào!`);
         continue;
       }
 
@@ -311,6 +339,7 @@ async function syncSingleManga(
 
       console.log(`  ${progressStr} ✅ Chương ${ch.chapterNumber} ("${ch.title}"): Đã lưu ${pages.length} trang ảnh.`);
       chaptersSynced++;
+      newlySyncedCount++;
       totalPagesSynced += pages.length;
 
       // Rate limit cooling pause between chapters
@@ -321,11 +350,45 @@ async function syncSingleManga(
     }
   }
 
-  // Update comic timestamp
+  // Update comic timestamp, chapterCount and latestChapterNumber
+  const chapterCount = await prisma.chapter.count({ where: { comicId: comic.id } });
+  const latest = await prisma.chapter.findFirst({
+    where: { comicId: comic.id },
+    orderBy: { chapterNumber: "desc" },
+    select: { chapterNumber: true },
+  });
+
   await prisma.comic.update({
     where: { id: comic.id },
-    data: { updatedAt: new Date() },
+    data: {
+      updatedAt: new Date(),
+      chapterCount,
+      latestChapterNumber: latest?.chapterNumber ?? null,
+    },
   });
+
+  // Notify followers & Invalidate Cache if new chapters were added
+  if (newlySyncedCount > 0) {
+    try {
+      const followers = await prisma.follow.findMany({
+        where: { comicId: comic.id },
+        select: { userId: true },
+      });
+      if (followers.length > 0) {
+        await prisma.notification.createMany({
+          data: followers.map((f) => ({
+            userId: f.userId,
+            title: `Chương mới: ${comic.title}`,
+            message: `Chương ${latest?.chapterNumber} vừa được cập nhật. Đọc ngay!`,
+            linkUrl: `/comics/${comic.slug}/chuong-${latest?.chapterNumber}`,
+          })),
+        });
+        console.log(`  🔔 Đã gửi thông báo chương mới đến ${followers.length} người theo dõi truyện!`);
+      }
+    } catch {
+      // Non-blocking notification fallback
+    }
+  }
 
   // Index into Meilisearch if configured
   try {
@@ -353,8 +416,77 @@ async function syncSingleManga(
     // Non-blocking fallback
   }
 
-  console.log(`🎉 Hoàn tất truyện "${manga.title}": ${chaptersSynced}/${chapters.length} chương (${totalPagesSynced} trang).`);
-  return { success: true, chaptersCount: chaptersSynced, pagesCount: totalPagesSynced };
+  console.log(`🎉 Hoàn tất truyện "${manga.title}": ${chaptersSynced}/${chapters.length} chương (${totalPagesSynced} trang, +${newlySyncedCount} mới).`);
+  return { success: true, chaptersCount: chaptersSynced, pagesCount: totalPagesSynced, newChaptersCount: newlySyncedCount };
+}
+
+/**
+ * Scan top recently updated manga on MangaDex and sync only their new chapters
+ */
+export async function scanLatestUpdates(scanLimit = 20): Promise<{
+  checked: number;
+  updated: number;
+  newChapters: number;
+  totalPages: number;
+}> {
+  console.log("\n=============================================================");
+  console.log(`🔍 [SCAN UPDATES] Đang quét ${scanLimit} truyện vừa có chương mới trên MangaDex...`);
+  console.log("=============================================================");
+
+  try {
+    const res = await mangadexService.getVietnameseMangaList({
+      offset: 0,
+      limit: scanLimit,
+      order: "latest", // latestUploadedChapter desc
+    });
+
+    const mangaList = res.data;
+    console.log(`📥 Đã nhận danh sách ${mangaList.length} truyện cập nhật mới nhất.`);
+
+    let updatedCount = 0;
+    let newChaptersTotal = 0;
+    let newPagesTotal = 0;
+
+    for (let i = 0; i < mangaList.length; i++) {
+      const item = mangaList[i];
+      const normalized = mangadexService.normalizeManga(item);
+      console.log(`\n[Quét cập nhật ${i + 1}/${mangaList.length}] "${normalized.title}"...`);
+
+      const result = await syncSingleManga(normalized, {
+        quality: qualityArg,
+        skipExisting: false,
+        force: isForce,
+        maxChapters: maxChaptersArg,
+      });
+
+      if ((result as any).newChaptersCount > 0) {
+        updatedCount++;
+        newChaptersTotal += (result as any).newChaptersCount;
+        newPagesTotal += result.pagesCount;
+      }
+
+      await sleep(350);
+    }
+
+    console.log("\n=============================================================");
+    console.log(`✨ KẾT QUẢ QUÉT CẬP NHẬT:`);
+    console.log(` - Số truyện đã kiểm tra: ${mangaList.length}`);
+    console.log(` - Số truyện có chương mới: ${updatedCount}`);
+    console.log(` - Tổng số chương mới đã nạp: ${newChaptersTotal}`);
+    console.log(` - Tổng số trang ảnh đã lưu: ${newPagesTotal}`);
+    console.log("=============================================================\n");
+
+    return {
+      checked: mangaList.length,
+      updated: updatedCount,
+      newChapters: newChaptersTotal,
+      totalPages: newPagesTotal,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("❌ Lỗi trong quá trình quét cập nhật mới:", msg);
+    return { checked: 0, updated: 0, newChapters: 0, totalPages: 0 };
+  }
 }
 
 async function runCrawlBatch() {
@@ -363,10 +495,12 @@ async function runCrawlBatch() {
   console.log("=============================================================");
   console.log(`Options:`);
   console.log(` - Chế độ: ${isContinuous ? `Chạy định kỳ (mỗi ${intervalMinutes} phút)` : "Chạy 1 lần"}`);
+  console.log(` - Mode hoạt động: ${modeArg.toUpperCase()}`);
   console.log(` - Giới hạn truyện: ${isAll ? "TOÀN BỘ (Tất cả)" : limitArg}`);
-  console.log(` - Sắp xếp: ${orderArg} (từ mới nhất)`);
+  console.log(` - Sắp xếp: ${orderArg}`);
   console.log(` - Chất lượng ảnh: ${qualityArg}`);
   console.log(` - Bỏ qua truyện đã có: ${isSkipExisting ? "Bật" : "Tắt"}`);
+  console.log(` - Cào đè (Force): ${isForce ? "Bật" : "Tắt"}`);
   console.log(` - Chế độ Resume: ${isResume ? "Bật" : "Tắt"}`);
   if (maxChaptersArg) console.log(` - Giới hạn số chương / truyện: ${maxChaptersArg}`);
   console.log("=============================================================\n");
@@ -389,6 +523,7 @@ async function runCrawlBatch() {
       await syncSingleManga(normalized, {
         quality: qualityArg,
         skipExisting: isSkipExisting,
+        force: isForce,
         maxChapters: maxChaptersArg,
       });
       console.log("\n✅ Hoàn thành crawl 1 truyện thành công!");
@@ -435,6 +570,7 @@ async function runCrawlBatch() {
         const result = await syncSingleManga(normalized, {
           quality: qualityArg,
           skipExisting: isSkipExisting,
+          force: isForce,
           maxChapters: maxChaptersArg,
         });
 
@@ -481,12 +617,16 @@ async function runCrawlBatch() {
 
 async function main() {
   if (!isContinuous) {
-    await runCrawlBatch();
+    if (modeArg === "updates") {
+      await scanLatestUpdates(updatesLimitArg);
+    } else {
+      await runCrawlBatch();
+    }
     await prisma.$disconnect();
     return;
   }
 
-  console.log(`\n🔄 Kích hoạt chế độ CRAWLER DAEMON trong Docker (Tần suất: mỗi ${intervalMinutes} phút)...\n`);
+  console.log(`\n🔄 Kích hoạt chế độ CRAWLER DAEMON trong Docker (Mode: ${modeArg.toUpperCase()}, Tần suất: mỗi ${intervalMinutes} phút)...\n`);
   let cycle = 1;
 
   const runLoop = async () => {
@@ -495,7 +635,17 @@ async function main() {
       console.log(`⏱️ BẮT ĐẦU CHU KỲ CRAWL #${cycle} - ${new Date().toLocaleString("vi-VN")}`);
       console.log(`=============================================================`);
       try {
-        await runCrawlBatch();
+        if (modeArg === "updates") {
+          // Mode 1: Chỉ quét các truyện có chương mới cập nhật
+          await scanLatestUpdates(updatesLimitArg);
+        } else if (modeArg === "backlog") {
+          // Mode 2: Chỉ quét kho truyện theo checkpoint
+          await runCrawlBatch();
+        } else {
+          // Mode 3: Hybrid - Quét nhanh cập nhật mới trước, sau đó quét kho truyện
+          await scanLatestUpdates(updatesLimitArg);
+          await runCrawlBatch();
+        }
       } catch (err) {
         console.error(`❌ Lỗi chu kỳ crawl #${cycle}:`, err);
       }
@@ -522,4 +672,5 @@ main().catch(async (e) => {
   await prisma.$disconnect();
   process.exit(1);
 });
+
 

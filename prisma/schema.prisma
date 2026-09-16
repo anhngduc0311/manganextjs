@@ -63,10 +63,12 @@ model Comic {
   views         BigInt         @default(0)
   monthlyViews  BigInt         @default(0)
   weeklyViews   BigInt         @default(0)
-  ratingAvg     Float          @default(0.0)
-  ratingCount   Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  ratingAvg           Float          @default(0.0)
+  ratingCount         Int            @default(0)
+  chapterCount        Int            @default(0)
+  latestChapterNumber Float?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   chapters      Chapter[]
   categories    ComicCategory[]
@@ -78,6 +80,7 @@ model Comic {
   @@index([slug])
   @@index([titleUnaccent])
   @@index([views(sort: Desc)])
+  @@index([updatedAt(sort: Desc)])
 }
 
 model Category {

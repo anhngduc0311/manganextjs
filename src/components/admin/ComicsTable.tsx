@@ -13,9 +13,10 @@ import {
   Star,
   ExternalLink,
   Filter,
+  RefreshCw,
 } from "lucide-react";
 import { ComicModalForm, type ComicFormData } from "./ComicModalForm";
-import { deleteComicAction } from "@/actions/comic.actions";
+import { deleteComicAction, scanMangaDexUpdatesAction } from "@/actions/comic.actions";
 import { toast } from "@/stores/toast-store";
 import type { CategoryDTO } from "@/types";
 
@@ -48,6 +49,7 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingComic, setEditingComic] = useState<ComicFormData | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isScanning, setIsScanning] = useState(false);
 
   const filtered = initialComics.filter((c) => {
     const matchSearch =
@@ -79,6 +81,29 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
       categoryIds: c.categories.map((cat) => cat.id),
     });
     setModalOpen(true);
+  };
+
+  const handleScanUpdates = async () => {
+    if (isScanning) return;
+    setIsScanning(true);
+    toast.info("Đang quét cập nhật mới từ MangaDex (20 truyện mới nhất)...");
+
+    try {
+      const res = await scanMangaDexUpdatesAction(20);
+      if (res.ok && res.data) {
+        if (res.data.newChaptersCount > 0) {
+          toast.success(`Đã nạp ${res.data.newChaptersCount} chương mới từ ${res.data.updatedCount} bộ truyện!`);
+        } else {
+          toast.success(`Đã quét xong ${res.data.scannedCount} truyện: Tất cả đều đã ở phiên bản mới nhất!`);
+        }
+      } else {
+        toast.error(res.error || "Không thể quét cập nhật lúc này");
+      }
+    } catch {
+      toast.error("Lỗi khi quét cập nhật từ MangaDex");
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleDelete = (id: string, title: string) => {
@@ -132,13 +157,25 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
           </div>
         </div>
 
-        {/* Add Comic Button */}
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition cursor-pointer shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Thêm truyện mới
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={handleScanUpdates}
+            disabled={isScanning}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800/90 px-4 py-2.5 text-xs font-bold text-zinc-200 shadow-md hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
+            title="Quét các truyện vừa có chương mới trên MangaDex và nạp chương mới vào hệ thống"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-orange-400 ${isScanning ? "animate-spin" : ""}`} />
+            {isScanning ? "Đang quét MangaDex..." : "Quét truyện mới cập nhật"}
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Thêm truyện mới
+          </button>
+        </div>
       </div>
 
       {/* Table Card */}

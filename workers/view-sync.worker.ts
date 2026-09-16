@@ -39,12 +39,11 @@ export async function syncBufferedViews(): Promise<{ syncedComics: number; synce
     if (comicKeys.length > 0) {
       for (const key of comicKeys) {
         const comicId = key.replace("comic:views:", "");
-        // Atomically get and delete or decrement
-        const rawCount = await redisRest.get<number | string>(key);
+        // Atomically get and delete to eliminate race condition
+        const rawCount = await redisRest.getdel<number | string>(key);
         const count = typeof rawCount === "number" ? rawCount : parseInt(String(rawCount || "0"), 10);
 
         if (count > 0) {
-          await redisRest.del(key);
           await prisma.comic.update({
             where: { id: comicId },
             data: {
@@ -65,11 +64,11 @@ export async function syncBufferedViews(): Promise<{ syncedComics: number; synce
     if (chapterKeys.length > 0) {
       for (const key of chapterKeys) {
         const chapterId = key.replace("chapter:views:", "");
-        const rawCount = await redisRest.get<number | string>(key);
+        // Atomically get and delete
+        const rawCount = await redisRest.getdel<number | string>(key);
         const count = typeof rawCount === "number" ? rawCount : parseInt(String(rawCount || "0"), 10);
 
         if (count > 0) {
-          await redisRest.del(key);
           await prisma.chapter.update({
             where: { id: chapterId },
             data: {

@@ -190,7 +190,7 @@ export function translateMangaDexGenre(rawTag: string): string {
   return trimmed;
 }
 
-const BASE_API = "https://api.mangadex.org";
+const BASE_API = (process.env.MANGADEX_API_URL || "https://api.mangadex.org").replace(/\/$/, "");
 const COVERS_BASE = "https://uploads.mangadex.org/covers";
 
 /**
@@ -200,12 +200,27 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+let lastAtHomeRequestTime = 0;
+// When using a Cloudflare Worker proxy, IPs rotate on edge nodes, so we can use a fast 300ms delay
+const MIN_AT_HOME_INTERVAL_MS = process.env.MANGADEX_API_URL ? 300 : 2000;
+
 /**
- * Fetch wrapper with rate limiting & exponential backoff for 429
+ * Fetch wrapper with smart rate limiting, adaptive pacing & exponential backoff for 429
  */
-async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries = 4, delayBetweenReq = 350): Promise<Response> {
+async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries = 8, delayBetweenReq = 400): Promise<Response> {
   let attempt = 0;
-  await sleep(delayBetweenReq);
+
+  // Adaptive rate pacing specifically for MangaDex @Home API to prevent 429
+  if (url.includes("/at-home/server/")) {
+    const now = Date.now();
+    const elapsed = now - lastAtHomeRequestTime;
+    if (elapsed < MIN_AT_HOME_INTERVAL_MS) {
+      await sleep(MIN_AT_HOME_INTERVAL_MS - elapsed);
+    }
+    lastAtHomeRequestTime = Date.now();
+  } else {
+    await sleep(delayBetweenReq);
+  }
 
   while (attempt < maxRetries) {
     try {
@@ -221,8 +236,12 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries
       if (response.status === 429) {
         attempt++;
         const retryAfterHeader = response.headers.get("retry-after") || response.headers.get("x-ratelimit-retry-after");
-        const waitTime = retryAfterHeader ? Math.max(1, parseInt(retryAfterHeader, 10)) * 1000 : Math.pow(2, attempt) * 2000;
-        console.warn(`[MangaDex RateLimit] 429 Too Many Requests on ${url}. Retrying in ${waitTime}ms (Attempt ${attempt}/${maxRetries})...`);
+        const parsedRetry = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 0;
+        const waitTime = !isNaN(parsedRetry) && parsedRetry > 0
+          ? (parsedRetry + 1) * 1000
+          : Math.min(30000, Math.pow(2, attempt) * 1500);
+
+        console.log(`⏳ [MangaDex Auto-Pacing] Đang nghỉ ${Math.round(waitTime / 1000)}s theo quota MangaDex API trước khi tải tiếp...`);
         await sleep(waitTime);
         continue;
       }

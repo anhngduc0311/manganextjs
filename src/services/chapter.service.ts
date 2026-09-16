@@ -29,8 +29,6 @@ export const chapterService = {
       });
       const pages: PageDTO[] = rows.map((r) => ({ pageIndex: r.pageIndex, imageUrl: r.imageUrl }));
 
-      cacheService.incrView(comic.id, chapter.id).catch(() => {});
-
       const [prev, next] = await Promise.all([
         prisma.chapter.findFirst({
           where: { comicId: comic.id, chapterNumber: { lt: chapterNumber } },

@@ -108,6 +108,16 @@ export async function POST(req: NextRequest) {
 
     // 5. Enqueue Chapter Ingestion Jobs to BullMQ
     const queue = await getIngestQueue();
+    if (!queue) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Hàng đợi xử lý ảnh (BullMQ / Redis) hiện không khả dụng. Vui lòng kiểm tra dịch vụ Redis.",
+        },
+        { status: 503 }
+      );
+    }
+
     const jobIds: string[] = [];
 
     for (const ch of chaptersData) {
@@ -120,17 +130,12 @@ export async function POST(req: NextRequest) {
         sourcePageUrls: ch.pages,
       };
 
-      if (queue) {
-        const job = await queue.add(`ingest-${comic.slug}-ch-${ch.chapterNumber}`, jobData, {
-          jobId: `job_${comic.id}_${ch.chapterNumber}`,
-          removeOnComplete: 100,
-          removeOnFail: 200,
-        });
-        jobIds.push(String(job.id));
-      } else {
-        // Direct worker fallback if BullMQ Redis TCP not connected
-        jobIds.push(`queued_sync_${ch.chapterNumber}`);
-      }
+      const job = await queue.add(`ingest-${comic.slug}-ch-${ch.chapterNumber}`, jobData, {
+        jobId: `job_${comic.id}_${ch.chapterNumber}`,
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      });
+      jobIds.push(String(job.id));
     }
 
     return NextResponse.json({

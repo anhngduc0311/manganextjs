@@ -13,6 +13,7 @@ export interface UnifiedRedisClient {
   scard(key: string): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
   ping(): Promise<string>;
+  getdel<T = unknown>(key: string): Promise<T | null>;
 }
 
 const tcpUrl = env.REDIS_URL || env.UPSTASH_REDIS_URL_TCP;
@@ -39,7 +40,38 @@ function createUnifiedClient(): UnifiedRedisClient | null {
       url: env.UPSTASH_REDIS_REST_URL,
       token: env.UPSTASH_REDIS_REST_TOKEN,
     });
-    return upstash as unknown as UnifiedRedisClient;
+    return {
+      get: <T>(key: string) => upstash.get<T>(key),
+      set: async (key: string, value: unknown, opts?: { ex?: number }): Promise<string | null> => {
+        const res = opts?.ex
+          ? await upstash.set(key, value, { ex: opts.ex })
+          : await upstash.set(key, value);
+        return res ? String(res) : null;
+      },
+      del: (...keys: string[]) => upstash.del(...keys),
+      incr: (key: string) => upstash.incr(key),
+      scan: (cursor: string | number, opts?: { match?: string; count?: number }) =>
+        upstash.scan(cursor, opts as any) as any,
+      sadd: (key: string, ...members: string[]) => (upstash.sadd as any)(key, ...members),
+      srem: (key: string, ...members: string[]) => (upstash.srem as any)(key, ...members),
+      scard: (key: string) => upstash.scard(key),
+      expire: (key: string, seconds: number) => upstash.expire(key, seconds),
+      ping: () => upstash.ping(),
+      getdel: async <T = unknown>(key: string): Promise<T | null> => {
+        try {
+          if (typeof (upstash as any).getdel === "function") {
+            return (await (upstash as any).getdel(key)) as T;
+          }
+          const val = await upstash.get<T>(key);
+          if (val !== null && val !== undefined) {
+            await upstash.del(key);
+          }
+          return val;
+        } catch {
+          return null;
+        }
+      },
+    };
   }
 
   // 2. Otherwise use local / Docker TCP Redis via ioredis
@@ -108,6 +140,33 @@ function createUnifiedClient(): UnifiedRedisClient | null {
 
       async ping(): Promise<string> {
         return client.ping();
+      },
+
+      async getdel<T = unknown>(key: string): Promise<T | null> {
+        try {
+          // Native GETDEL in Redis 6.2+
+          if (typeof (client as any).getdel === "function") {
+            const raw = await (client as any).getdel(key);
+            if (raw === null || raw === undefined) return null;
+            try {
+              return JSON.parse(raw) as T;
+            } catch {
+              return raw as unknown as T;
+            }
+          }
+          // Fallback via atomic pipeline
+          const results = await client.pipeline().get(key).del(key).exec();
+          const getResult = results?.[0]?.[1];
+          if (getResult === null || getResult === undefined) return null;
+          const rawStr = String(getResult);
+          try {
+            return JSON.parse(rawStr) as T;
+          } catch {
+            return rawStr as unknown as T;
+          }
+        } catch {
+          return null;
+        }
       },
     };
   }

@@ -112,6 +112,8 @@ Dự án đã tích hợp sẵn script tự động hóa triển khai toàn di�
 
 ### 1. Cấp quyền thực thi và triển khai 1-click
 ```bash
+sudo apt update && sudo apt install -y git && sudo apt install nano -y
+
 chmod +x deploy.sh
 ./deploy.sh
 ```

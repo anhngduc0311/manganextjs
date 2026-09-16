@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { useReaderStore } from "@/stores/reader-store";
 import { useReaderSettings } from "@/hooks/use-reader-settings";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
+import { useViewTracker } from "@/hooks/use-view-tracker";
 import { WebtoonReader } from "./WebtoonReader";
 import { PageFlipReader } from "./PageFlipReader";
 import type { ChapterPageDTO } from "@/types";
 
 export interface ReaderViewProps {
+  comicId?: string;
   comicSlug: string;
   pages: ChapterPageDTO[];
   prevChapterNumber?: number | null;
@@ -18,13 +20,18 @@ export interface ReaderViewProps {
 }
 
 export function ReaderView({
+  comicId,
   comicSlug,
   pages,
   prevChapterNumber,
   nextChapterNumber,
+  chapterId,
 }: ReaderViewProps) {
   const router = useRouter();
   const { mode, currentPage, setCurrentPage } = useReaderStore();
+
+  // Track view after user has spent >= 5 seconds on the chapter
+  useViewTracker(comicId, chapterId);
 
   const handleNextChapter = () => {
     if (nextChapterNumber !== null && nextChapterNumber !== undefined) {

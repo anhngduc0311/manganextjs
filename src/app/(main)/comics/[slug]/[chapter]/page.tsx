@@ -94,6 +94,7 @@ export default async function ChapterReaderPage({ params }: ReaderPageProps) {
       {/* Main Chapter Reader Images */}
       <main className="w-full">
         <ReaderView
+          comicId={data.comic.id}
           comicSlug={data.comic.slug}
           chapterId={data.chapter.id}
           pages={data.pages}

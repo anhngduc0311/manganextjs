@@ -7,8 +7,6 @@ import type { CategoryDTO, ComicCardDTO, ComicDetailDTO, ComicStatus, RankingPer
 
 const cardInclude = {
   categories: { include: { category: true } },
-  _count: { select: { chapters: true } },
-  chapters: { orderBy: { chapterNumber: "desc" }, take: 1, select: { chapterNumber: true } },
 } satisfies Prisma.ComicInclude;
 
 type ComicWithCard = Prisma.ComicGetPayload<{ include: typeof cardInclude }>;
@@ -23,8 +21,8 @@ function mapCard(c: ComicWithCard): ComicCardDTO {
     views: Number(c.views),
     ratingAvg: c.ratingAvg,
     ratingCount: c.ratingCount,
-    chapterCount: c._count.chapters,
-    latestChapterNumber: c.chapters?.[0]?.chapterNumber ?? (c._count.chapters > 0 ? c._count.chapters : null),
+    chapterCount: c.chapterCount,
+    latestChapterNumber: c.latestChapterNumber ?? (c.chapterCount > 0 ? c.chapterCount : null),
     updatedAt: c.updatedAt.toISOString(),
     categories: c.categories.map((gc) => ({ name: gc.category.name, slug: gc.category.slug })),
   };

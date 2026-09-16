@@ -4,9 +4,7 @@ import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-function getPrisma(): PrismaClient {
-  if (globalForPrisma.prisma) return globalForPrisma.prisma;
-
+function createPrismaClient(): PrismaClient {
   let client: PrismaClient;
   if (process.env.DATABASE_URL) {
     let connectionString = process.env.DATABASE_URL;
@@ -24,17 +22,11 @@ function getPrisma(): PrismaClient {
       log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
     });
   }
-
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
   return client;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
-    const client = getPrisma();
-    const value = Reflect.get(client, prop, receiver);
-    return typeof value === "function" ? value.bind(client) : value;
-  },
-});
+export const prisma: PrismaClient = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}

@@ -72,11 +72,11 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
-      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      UPSTASH_REDIS_URL_TCP: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-truyenkomi_meili_master_key_2026}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
@@ -98,10 +98,10 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      UPSTASH_REDIS_URL_TCP: redis://redis:6379
 
   crawler:
     build:
@@ -120,15 +120,21 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
-      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      UPSTASH_REDIS_URL_TCP: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-truyenkomi_meili_master_key_2026}
+      MANGADEX_API_URL: ${MANGADEX_API_URL:-https://api.mangadex.org}
       CRAWLER_CONTINUOUS: ${CRAWLER_CONTINUOUS:-true}
       CRAWLER_INTERVAL_MINUTES: ${CRAWLER_INTERVAL_MINUTES:-10}
+      CRAWLER_MODE: ${CRAWLER_MODE:-hybrid}
+      CRAWLER_UPDATES_LIMIT: ${CRAWLER_UPDATES_LIMIT:-20}
       CRAWLER_LIMIT: ${CRAWLER_LIMIT:-20}
+      CRAWLER_RESUME: ${CRAWLER_RESUME:-true}
+      CRAWLER_SKIP_EXISTING: ${CRAWLER_SKIP_EXISTING:-false}
+      CRAWLER_FORCE: ${CRAWLER_FORCE:-false}
       CHECKPOINT_FILE: /app/.checkpoint/.mangadex-checkpoint.json
     volumes:
       - crawler_checkpoint:/app/.checkpoint

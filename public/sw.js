@@ -40,13 +40,33 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and API/Auth/SSE requests
+  // Skip non-GET requests and API/Auth/SSE requests (except /api/views which is write-only)
   if (
     request.method !== "GET" ||
     url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/_next/data/") ||
     url.pathname.includes("socket")
   ) {
+    return;
+  }
+
+  // React Server Components (RSC) requests (Next.js 15 App Router navigation)
+  const isRSC = url.searchParams.has("_rsc") || request.headers.get("RSC") === "1";
+  if (isRSC) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return new Response("", { status: 200, headers: { "Content-Type": "text/x-component" } });
+        })
+    );
     return;
   }
 
