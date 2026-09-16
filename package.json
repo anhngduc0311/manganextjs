@@ -1,0 +1,75 @@
+{
+  "name": "truyenkomi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TruyenKomi - Nen tang doc va quan ly truyen tranh truc tuyen (Next.js Fullstack)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "worker": "tsx workers/index.ts",
+    "test": "vitest run",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "tsx prisma/seed.ts",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.705.0",
+    "@aws-sdk/s3-request-presigner": "^3.705.0",
+    "@node-rs/argon2": "^2.0.2",
+    "@prisma/adapter-pg": "^6.19.3",
+    "@prisma/client": "^6.10.0",
+    "@tanstack/react-query": "^5.62.0",
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.5",
+    "bullmq": "^5.34.0",
+    "framer-motion": "^12.0.0",
+    "idb": "^8.0.0",
+    "ioredis": "^5.4.2",
+    "lucide-react": "^0.476.0",
+    "next": "15.5.6",
+    "next-auth": "5.0.0-beta.29",
+    "pg": "^8.23.0",
+    "pino": "^9.4.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sanitize-html": "^2.14.0",
+    "sharp": "^0.35.4",
+    "zod": "^3.25.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/sanitize-html": "^2.13.0",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.5.6",
+    "prettier": "^3.4.0",
+    "prisma": "^6.10.0",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "sharp@0.33.5": true,
+    "sharp@0.34.5": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true
+  }
+}

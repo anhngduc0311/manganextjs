@@ -1,0 +1,49 @@
+{
+  "name": "TruyenKomi — Đọc Truyện Tranh Online",
+  "short_name": "TruyenKomi",
+  "description": "Nền tảng đọc truyện tranh Manga, Manhwa, Manhua sắc nét, tốc độ cao và hỗ trợ đọc offline.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["books", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Khám Phá Truyện",
+      "short_name": "Khám Phá",
+      "description": "Duyệt toàn bộ danh mục truyện",
+      "url": "/comics",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tủ Truyện Offline",
+      "short_name": "Offline",
+      "description": "Đọc truyện đã tải xuống không cần mạng",
+      "url": "/offline",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lịch Sử Đọc",
+      "short_name": "Lịch Sử",
+      "description": "Xem lại các chương đang đọc dở",
+      "url": "/history",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
