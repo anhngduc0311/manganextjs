@@ -21,6 +21,18 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Bundle database seed script to pure JS
+RUN npx esbuild prisma/seed.ts \
+  --bundle \
+  --platform=node \
+  --target=node22 \
+  --outfile=prisma/seed.js \
+  --external:@prisma/client \
+  --external:@prisma/adapter-pg \
+  --external:pg \
+  --external:@node-rs/argon2 \
+  --external:dotenv
+
 # Build Next.js in production mode
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
@@ -52,7 +64,10 @@ RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema & migrations (needed for runtime & migrations)
+# Copy Prisma CLI & runtime migrations/seed
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Copy utility scripts (backup, maintenance, etc.)

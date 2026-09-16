@@ -208,8 +208,8 @@ run_migrations() {
     ensure_postgres_running
     log_info "Đang chạy Prisma database migrations..."
     
-    # Run migrations using the web service container
-    if $DOCKER_COMPOSE run --rm --no-deps web npx prisma migrate deploy; then
+    # Run migrations using the local Prisma CLI in the container (no npm/npx download)
+    if $DOCKER_COMPOSE run --rm --no-deps web node node_modules/prisma/build/index.js migrate deploy; then
         log_success "Prisma migrations đã được áp dụng thành công!"
     else
         log_error "Prisma migration thất bại. Dừng triển khai để tránh bỏ qua cập nhật dữ liệu."
@@ -221,7 +221,7 @@ run_migrations() {
 seed_database() {
     ensure_postgres_running
     log_info "Đang nạp dữ liệu mẫu và tạo tài khoản Admin mặc định (Prisma Seed)..."
-    if $DOCKER_COMPOSE run --rm --no-deps web npm run db:seed; then
+    if $DOCKER_COMPOSE run --rm --no-deps web node prisma/seed.js; then
         log_success "Nạp dữ liệu mẫu thành công!"
         echo -e "\n${BOLD}🔑 Thông Tin Đăng Nhập Mặc Định:${NC}"
         echo -e "   - ${CYAN}Admin:${NC}  email: ${BOLD}admin@truyenkomi.local${NC}  | password: ${BOLD}Admin@123456${NC}"
