@@ -55,6 +55,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema & migrations (needed for runtime & migrations)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Copy utility scripts (backup, maintenance, etc.)
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
 USER nextjs
 
 EXPOSE 3000

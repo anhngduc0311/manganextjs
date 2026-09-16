@@ -262,10 +262,10 @@ check_health() {
 run_r2_backup_script() {
     local cmd="$1"
     shift
-    if command -v npx >/dev/null 2>&1; then
-        npx tsx scripts/r2-backup.ts "$cmd" "$@"
+    if command -v node >/dev/null 2>&1 && [ -f "scripts/r2-backup.mjs" ]; then
+        node scripts/r2-backup.mjs "$cmd" "$@"
     else
-        $DOCKER_COMPOSE run --rm --no-deps web npx tsx scripts/r2-backup.ts "$cmd" "$@"
+        $DOCKER_COMPOSE run --rm --no-deps -v "$(pwd)/backups:/app/backups" -v "$(pwd)/scripts:/app/scripts:ro" web node /app/scripts/r2-backup.mjs "$cmd" "$@"
     fi
 }
 
