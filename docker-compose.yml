@@ -83,26 +83,6 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-supersecretjwtkey_truyenkomi_fullstack_2026}
       AUTH_SECRET: ${AUTH_SECRET:-supersecretjwtkey_truyenkomi_fullstack_2026}
 
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    container_name: truyenkomi_worker
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
-      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-truyenkomi_db}?schema=public
-      REDIS_URL: redis://redis:6379
-      UPSTASH_REDIS_URL_TCP: redis://redis:6379
-
   crawler:
     build:
       context: .

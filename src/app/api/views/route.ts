@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cacheService } from "@/services/cache.service";
+import { prisma } from "@/lib/prisma";
 import { viewSchema } from "@/types/schemas";
 
 export async function POST(req: NextRequest) {
@@ -16,11 +16,27 @@ export async function POST(req: NextRequest) {
 
     const { comicId, chapterId } = parsed.data;
 
-    // Asynchronously buffer the view in Redis
-    await cacheService.incrView(comicId, chapterId);
+    // Direct real-time increment in PostgreSQL (no background worker needed)
+    await prisma.$transaction([
+      prisma.comic.update({
+        where: { id: comicId },
+        data: {
+          views: { increment: 1 },
+          weeklyViews: { increment: 1 },
+          monthlyViews: { increment: 1 },
+        },
+      }),
+      prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          views: { increment: 1 },
+        },
+      }),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false, error: "Lỗi ghi nhận lượt xem" }, { status: 500 });
   }
 }
+

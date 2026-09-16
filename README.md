@@ -8,13 +8,13 @@ TruyenKomi là nền tảng đọc và quản lý truyện tranh trực tuyến 
 
 - **Framework:** Next.js 15+ (App Router, Server Actions, React 19, TypeScript).
 - **Database:** PostgreSQL on **Neon** (kết nối qua Connection Pooler + Prisma ORM). Tìm kiếm không dấu & mờ cực nhanh với `pg_trgm` + `unaccent`.
-- **Cache & Message Broker:** **Upstash Redis** (REST client cho Next.js serverless/Edge + TCP ioredis cho BullMQ Worker).
+- **Cache & Session:** **Upstash Redis** (REST client cho Next.js serverless/Edge & Invalidation Cache).
 - **Storage CDN:** **Cloudflare R2** (S3-compatible API với Presigned URL upload trực tiếp từ trình duyệt).
 - **Security & Auth:** NextAuth v5 + JWT (HttpOnly, Secure cookies) + Password Hashing bằng Argon2id (`@node-rs/argon2`).
 - **Reader Engine:** Hỗ trợ 3 chế độ đọc: *Dọc vô tận (Webtoon)*, *Từng trang (Single Page)*, *2 trang (Double Page)* kèm bàn phím & full-screen navigation.
 - **PWA & Offline:** Service Worker cache assets + IndexedDB lưu trữ toàn bộ ảnh chương để đọc khi mất mạng.
 - **Realtime Presence:** Server-Sent Events (SSE) theo dõi số lượng độc giả đang đọc trực tiếp từng chương truyện theo thời gian thực.
-- **Background Pipeline:** Worker tách biệt (`tsx workers/index.ts`) xử lý nén ảnh WebP (Sharp) và đồng bộ view batch mỗi 30s.
+- **Direct View Tracking:** Ghi nhận lượt xem trực tiếp và tức thời vào PostgreSQL qua database transaction.
 
 ---
 
@@ -66,24 +66,18 @@ npm run db:migrate
 # Sinh Prisma client
 npm run db:generate
 
-# Nạp 5 truyện mẫu, thể loại và tài khoản Admin mặc định
+# Nạp tài khoản Admin mặc định
 npm run db:seed
 ```
 
-### 5. Khởi Chạy Web Server & Background Worker
+### 5. Khởi Chạy Web Server
 Chạy web app:
 ```bash
 npm run dev
 ```
 Mở trình duyệt tại [http://localhost:3000](http://localhost:3000).
 
-Chạy worker xử lý nén ảnh & gom batch view (ở terminal riêng):
-```bash
-npm run worker
-```
-
 ### 6. Đồng Bộ / Crawl Truyện Từ MangaDex
-
 1. Quét TOÀN BỘ truyện tiếng Việt từ mới nhất đến cũ nhất:
 ```bash
 npm run crawl:mangadex -- --all
@@ -120,7 +114,7 @@ chmod +x deploy.sh
 > **Script sẽ tự động:**
 > - Kiểm tra và hỗ trợ cài đặt Docker & Docker Compose nếu chưa có
 > - Khởi tạo tệp cấu hình `.env` với các khóa bảo mật bí mật được sinh ngẫu nhiên an toàn
-> - Build các image `web` (Next.js 15), `worker` (BullMQ + Sharp), `crawler`, `postgres`, `redis`, `meilisearch`
+> - Build các image `web` (Next.js 15), `crawler`, `postgres`, `redis`, `meilisearch`
 > - Khởi chạy tất cả container nền (`docker compose up -d`)
 > - Đồng bộ cấu trúc cơ sở dữ liệu (`prisma migrate deploy`)
 > - Kiểm tra tình trạng sức khỏe hệ thống qua `/api/health`
@@ -132,7 +126,7 @@ chmod +x deploy.sh
 
 ### 3. Các lệnh quản trị hệ thống:
 ```bash
-# Xem log tất cả các dịch vụ (hoặc riêng từng dịch vụ: web, worker, crawler)
+# Xem log tất cả các dịch vụ (hoặc riêng từng dịch vụ: web, crawler)
 ./deploy.sh --logs
 ./deploy.sh --logs web
 

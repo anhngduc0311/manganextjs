@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { redisRest } from "@/lib/redis";
+import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
 const SCAN_COUNT = 100;
@@ -43,11 +44,22 @@ export const cacheService = {
   },
 
   async incrView(comicId: string, chapterId: string): Promise<void> {
-    if (!redisRest) return;
     try {
-      await Promise.all([
-        redisRest.incr(`comic:views:${comicId}`),
-        redisRest.incr(`chapter:views:${chapterId}`),
+      await prisma.$transaction([
+        prisma.comic.update({
+          where: { id: comicId },
+          data: {
+            views: { increment: 1 },
+            weeklyViews: { increment: 1 },
+            monthlyViews: { increment: 1 },
+          },
+        }),
+        prisma.chapter.update({
+          where: { id: chapterId },
+          data: {
+            views: { increment: 1 },
+          },
+        }),
       ]);
     } catch (err) {
       logger.warn({ err }, "incr view that bai");

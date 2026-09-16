@@ -7,7 +7,7 @@
 #   ./deploy.sh --seed       : Run database seed (Admin account + sample comics)
 #   ./deploy.sh --migrate    : Run Prisma database migrations
 #   ./deploy.sh --restart    : Restart all services
-#   ./deploy.sh --logs [svc] : View logs (all or specific service, e.g. web, worker)
+#   ./deploy.sh --logs [svc] : View logs (all or specific service, e.g. web, crawler)
 #   ./deploy.sh --status     : Check status and resource usage of all containers
 #   ./deploy.sh --down       : Stop and remove containers (data preserved in volumes)
 #   ./deploy.sh --backup     : Backup PostgreSQL database to ./backups/
@@ -294,7 +294,6 @@ show_summary() {
     echo -e "${BOLD}🛠️ Các lệnh quản trị hữu ích:${NC}"
     echo -e "   - Xem logs thời gian thực:  ${YELLOW}$0 --logs${NC}"
     echo -e "   - Xem logs web server:      ${YELLOW}$0 --logs web${NC}"
-    echo -e "   - Xem logs background job:  ${YELLOW}$0 --logs worker${NC}"
     echo -e "   - Xem logs crawler:         ${YELLOW}$0 --logs crawler${NC}"
     echo -e "   - Kiểm tra trạng thái:      ${YELLOW}$0 --status${NC}"
     echo -e "   - Nạp dữ liệu mẫu:          ${YELLOW}$0 --seed${NC}"
@@ -313,7 +312,7 @@ deploy() {
     log_info "1. Đang build & pull Docker images..."
     $DOCKER_COMPOSE build --pull
 
-    log_info "2. Đang khởi động các dịch vụ (PostgreSQL, Redis, Meilisearch, Web, Worker, Crawler)..."
+    log_info "2. Đang khởi động các dịch vụ (PostgreSQL, Redis, Meilisearch, Web, Crawler)..."
     $DOCKER_COMPOSE up -d
 
     log_info "3. Chờ cơ sở dữ liệu sẵn sàng..."
@@ -339,7 +338,7 @@ show_help() {
     echo "  (không truyền tham số) : Triển khai toàn bộ (Build, Run, Migrate, Health Check)"
     echo "  --seed                 : Nạp dữ liệu mẫu (Admin account, comics, genres)"
     echo "  --migrate              : Chạy Prisma database migrations"
-    echo "  --restart [service]    : Khởi động lại tất cả hoặc 1 dịch vụ cụ thể (web, worker...)"
+    echo "  --restart [service]    : Khởi động lại tất cả hoặc 1 dịch vụ cụ thể (web, crawler...)"
     echo "  --logs [service]       : Xem log thời gian thực (ví dụ: $0 --logs web)"
     echo "  --status               : Xem trạng thái và RAM/CPU của tất cả containers"
     echo "  --down                 : Dừng và gỡ bỏ containers (dữ liệu vẫn được giữ trong volume)"

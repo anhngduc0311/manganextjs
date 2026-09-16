@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Queue } from "bullmq";
 import { prisma } from "@/lib/prisma";
-import { getTcpRedis } from "@/lib/redis";
 import { comicService } from "@/services/comic.service";
 import { translateMangaDexGenre } from "@/services/mangadex.service";
 import { toSlug } from "@/lib/text-normalizer";
 import { ingestSchema } from "@/types/schemas";
-import type { ChapterJobData } from "@/../workers/crawler.worker";
-
-let ingestQueue: Queue<ChapterJobData> | null = null;
-
-async function getIngestQueue() {
-  if (ingestQueue) return ingestQueue;
-  const tcp = await getTcpRedis();
-  if (tcp) {
-    ingestQueue = new Queue<ChapterJobData>("ingestion", { connection: tcp as any });
-  }
-  return ingestQueue;
-}
 
 export async function POST(req: NextRequest) {
   // 1. Bearer Secret Verification
@@ -106,45 +92,64 @@ export async function POST(req: NextRequest) {
       select: { id: true, slug: true, title: true },
     });
 
-    // 5. Enqueue Chapter Ingestion Jobs to BullMQ
-    const queue = await getIngestQueue();
-    if (!queue) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Hàng đợi xử lý ảnh (BullMQ / Redis) hiện không khả dụng. Vui lòng kiểm tra dịch vụ Redis.",
-        },
-        { status: 503 }
-      );
-    }
-
-    const jobIds: string[] = [];
-
+    // 5. Directly Upsert Chapters and Pages into Database (no worker required)
+    let savedChaptersCount = 0;
     for (const ch of chaptersData) {
-      const jobData: ChapterJobData = {
-        comicId: comic.id,
-        comicSlug: comic.slug,
-        comicTitle: comic.title,
-        chapterNumber: ch.chapterNumber,
-        title: ch.title,
-        sourcePageUrls: ch.pages,
-      };
+      await prisma.$transaction(async (tx) => {
+        await tx.chapter.upsert({
+          where: {
+            comicId_chapterNumber: {
+              comicId: comic.id,
+              chapterNumber: ch.chapterNumber,
+            },
+          },
+          create: {
+            comicId: comic.id,
+            chapterNumber: ch.chapterNumber,
+            title: ch.title || null,
+            pages: {
+              create: ch.pages.map((url, pageIndex) => ({
+                pageIndex,
+                imageUrl: url,
+              })),
+            },
+          },
+          update: {
+            title: ch.title || null,
+            pages: {
+              deleteMany: {},
+              create: ch.pages.map((url, pageIndex) => ({
+                pageIndex,
+                imageUrl: url,
+              })),
+            },
+          },
+        });
 
-      const job = await queue.add(`ingest-${comic.slug}-ch-${ch.chapterNumber}`, jobData, {
-        jobId: `job_${comic.id}_${ch.chapterNumber}`,
-        removeOnComplete: 100,
-        removeOnFail: 200,
+        const totalChapters = await tx.chapter.count({ where: { comicId: comic.id } });
+        const latest = await tx.chapter.findFirst({
+          where: { comicId: comic.id },
+          orderBy: { chapterNumber: "desc" },
+          select: { chapterNumber: true },
+        });
+
+        await tx.comic.update({
+          where: { id: comic.id },
+          data: {
+            chapterCount: totalChapters,
+            latestChapterNumber: latest?.chapterNumber ?? ch.chapterNumber,
+          },
+        });
       });
-      jobIds.push(String(job.id));
+      savedChaptersCount++;
     }
 
     return NextResponse.json({
       ok: true,
       comicId: comic.id,
       comicSlug: comic.slug,
-      jobIds,
-      queued: chaptersData.length,
-      message: `Đã nạp metadata "${comic.title}" và đẩy ${chaptersData.length} chương vào hàng đợi xử lý ảnh.`,
+      savedChapters: savedChaptersCount,
+      message: `Đã nạp thành công truyện "${comic.title}" và lưu ${savedChaptersCount} chương trực tiếp vào CSDL.`,
     });
   } catch (error: any) {
     console.error("[Ingest API Error]:", error);
@@ -154,3 +159,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
