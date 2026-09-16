@@ -11,6 +11,7 @@ const r2Domain = process.env.R2_PUBLIC_DOMAIN
   : null;
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   serverExternalPackages: ["@node-rs/argon2", "sharp", "pino", "pino-pretty", "bullmq", "ioredis", "sanitize-html"],
   images: {
     formats: ["image/webp", "image/avif"],

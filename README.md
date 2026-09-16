@@ -106,6 +106,52 @@ npm run crawl:mangadex -- --all --skip-existing
 
 ---
 
+## 🐳 Triển Khai Nhanh Trên Ubuntu / Linux Bằng Docker (`deploy.sh`)
+
+Dự án đã tích hợp sẵn script tự động hóa triển khai toàn diện (`deploy.sh`) cho Ubuntu:
+
+### 1. Cấp quyền thực thi và triển khai 1-click
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+> **Script sẽ tự động:**
+> - Kiểm tra và hỗ trợ cài đặt Docker & Docker Compose nếu chưa có
+> - Khởi tạo tệp cấu hình `.env` với các khóa bảo mật bí mật được sinh ngẫu nhiên an toàn
+> - Build các image `web` (Next.js 15), `worker` (BullMQ + Sharp), `crawler`, `postgres`, `redis`, `meilisearch`
+> - Khởi chạy tất cả container nền (`docker compose up -d`)
+> - Đồng bộ cấu trúc cơ sở dữ liệu (`prisma migrate deploy`)
+> - Kiểm tra tình trạng sức khỏe hệ thống qua `/api/health`
+
+### 2. Nạp tài khoản Admin & Dữ liệu mẫu (Seed)
+```bash
+./deploy.sh --seed
+```
+
+### 3. Các lệnh quản trị hệ thống:
+```bash
+# Xem log tất cả các dịch vụ (hoặc riêng từng dịch vụ: web, worker, crawler)
+./deploy.sh --logs
+./deploy.sh --logs web
+
+# Kiểm tra trạng thái & RAM/CPU sử dụng
+./deploy.sh --status
+
+# Khởi động lại hệ thống
+./deploy.sh --restart
+
+# Sao lưu cơ sở dữ liệu (Database Backup)
+./deploy.sh --backup
+
+# Khôi phục dữ liệu từ bản sao lưu
+./deploy.sh --restore ./backups/truyenkomi_backup_xxxx.sql.gz
+
+# Dừng toàn bộ hệ thống
+./deploy.sh --down
+```
+
+---
+
 ## 🔑 Tài Khoản Mặc Định (Sau Khi Seed)
 
 | Vai Trò | Email | Mật Khẩu | Quyền Hạn |

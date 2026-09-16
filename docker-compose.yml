@@ -4,16 +4,16 @@ services:
     container_name: truyenkomi_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: truyenkomi_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${POSTGRES_DB:-truyenkomi_db}
     ports:
-      # Port 5438 on host -> 5432 in container (avoid conflict with 5432, 5433, 5435)
-      - "5438:5432"
+      # Port 5438 on host -> 5432 in container (avoid conflict with default 5432)
+      - "${POSTGRES_HOST_PORT:-5438}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d truyenkomi_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-truyenkomi_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,8 +24,8 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      # Port 6385 on host -> 6379 in container (avoid conflict with 6379, 6380, 6382)
-      - "6385:6379"
+      # Port 6385 on host -> 6379 in container (avoid conflict with default 6379)
+      - "${REDIS_HOST_PORT:-6385}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -39,12 +39,12 @@ services:
     container_name: truyenkomi_meilisearch
     restart: unless-stopped
     environment:
-      MEILI_MASTER_KEY: truyenkomi_meili_master_key_2026
-      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-truyenkomi_meili_master_key_2026}
+      MEILI_ENV: ${MEILI_ENV:-production}
       MEILI_NO_ANALYTICS: "true"
     ports:
-      # Port 7705 on host -> 7700 in container (avoid conflict with 7700, 7701, 7703)
-      - "7705:7700"
+      # Port 7705 on host -> 7700 in container (avoid conflict with default 7700)
+      - "${MEILI_HOST_PORT:-7705}:7700"
     volumes:
       - meilisearch_data:/meili_data
     healthcheck:
@@ -52,6 +52,56 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: truyenkomi_web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-truyenkomi_meili_master_key_2026}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-supersecretjwtkey_truyenkomi_fullstack_2026}
+      AUTH_SECRET: ${AUTH_SECRET:-supersecretjwtkey_truyenkomi_fullstack_2026}
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: truyenkomi_worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
 
   crawler:
     build:
@@ -66,17 +116,20 @@ services:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public"
-      DIRECT_URL: "postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public"
-      REDIS_URL: "redis://redis:6379"
-      UPSTASH_REDIS_URL_TCP: "redis://redis:6379"
-      MEILISEARCH_HOST: "http://meilisearch:7700"
-      MEILISEARCH_MASTER_KEY: "truyenkomi_meili_master_key_2026"
-      CRAWLER_CONTINUOUS: "true"
-      CRAWLER_INTERVAL_MINUTES: "10"
-      CRAWLER_LIMIT: "20"
-      CHECKPOINT_FILE: "/app/.checkpoint/.mangadex-checkpoint.json"
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      UPSTASH_REDIS_URL_TCP: ${UPSTASH_REDIS_URL_TCP:-redis://redis:6379}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-truyenkomi_meili_master_key_2026}
+      CRAWLER_CONTINUOUS: ${CRAWLER_CONTINUOUS:-true}
+      CRAWLER_INTERVAL_MINUTES: ${CRAWLER_INTERVAL_MINUTES:-10}
+      CRAWLER_LIMIT: ${CRAWLER_LIMIT:-20}
+      CHECKPOINT_FILE: /app/.checkpoint/.mangadex-checkpoint.json
     volumes:
       - crawler_checkpoint:/app/.checkpoint
 
@@ -89,5 +142,3 @@ volumes:
     driver: local
   crawler_checkpoint:
     driver: local
-
-
