@@ -229,36 +229,70 @@ check_health() {
     log_info "Xem logs bằng lệnh: $0 --logs web"
 }
 
-# --- Backup Database ---
+# --- Helper to run R2 backup utility ---
+run_r2_backup_script() {
+    local cmd="$1"
+    shift
+    if command -v npx >/dev/null 2>&1; then
+        npx tsx scripts/r2-backup.ts "$cmd" "$@"
+    else
+        $DOCKER_COMPOSE run --rm --no-deps web npx tsx scripts/r2-backup.ts "$cmd" "$@"
+    fi
+}
+
+# --- Backup Database (Local + Cloudflare R2) ---
 backup_database() {
     log_header "Sao lưu Cơ Sở Dữ Liệu PostgreSQL"
     mkdir -p "$BACKUP_DIR"
     local timestamp
     timestamp=$(date +"%Y%m%d_%H%M%S")
     local backup_file="${BACKUP_DIR}/truyenkomi_backup_${timestamp}.sql"
+    local compressed_file="${backup_file}.gz"
 
-    log_info "Đang tạo bản sao lưu tại '$backup_file'..."
+    log_info "1. Đang tạo bản sao lưu cục bộ tại '$backup_file'..."
     if $DOCKER_COMPOSE exec -T postgres pg_dump -U postgres truyenkomi_db > "$backup_file"; then
         # Compress backup
         gzip -f "$backup_file"
-        log_success "Sao lưu hoàn tất: ${backup_file}.gz ($(du -h "${backup_file}.gz" | cut -f1))"
+        local file_size
+        file_size=$(du -h "$compressed_file" | cut -f1)
+        log_success "Sao lưu cục bộ hoàn tất: $compressed_file ($file_size)"
+
+        # 2. Upload to Cloudflare R2 if configured
+        log_info "2. Đang kiểm tra cấu hình Cloudflare R2..."
+        if [ -f "$ENV_FILE" ] && grep -q "R2_ACCESS_KEY_ID" "$ENV_FILE" && ! grep -q 'R2_ACCESS_KEY_ID="your_r2_access_key_id"' "$ENV_FILE"; then
+            log_info "Phát hiện cấu hình Cloudflare R2. Đang đẩy bản sao lưu lên đám mây..."
+            if run_r2_backup_script upload "$compressed_file"; then
+                log_success "Bản sao lưu đã được lưu trữ an toàn trên Cloudflare R2!"
+            else
+                log_warning "Không thể tải lên Cloudflare R2 (Bản sao lưu cục bộ $compressed_file vẫn an toàn)."
+            fi
+        else
+            log_info "Chưa cấu hình R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY trong '$ENV_FILE'. Bỏ qua đẩy lên Cloudflare R2."
+            log_info "Bản sao lưu đã được lưu trữ cục bộ tại: $compressed_file"
+        fi
     else
         log_error "Sao lưu cơ sở dữ liệu thất bại."
         exit 1
     fi
 }
 
-# --- Restore Database ---
+# --- List Cloudflare R2 Backups ---
+list_r2_backups() {
+    log_header "Danh Sách Bản Sao Lưu trên Cloudflare R2"
+    run_r2_backup_script list
+}
+
+# --- Restore Database from Local File ---
 restore_database() {
     local file="${1:-}"
     if [ -z "$file" ] || [ ! -f "$file" ]; then
         log_error "Vui lòng cung cấp đường dẫn tệp sao lưu hợp lệ (.sql hoặc .sql.gz)."
-        echo "Ví dụ: $0 --restore ./backups/truyenkomi_backup_20260916.sql.gz"
+        echo "Ví dụ: $0 --restore ./backups/truyenkomi_backup_20260916_120000.sql.gz"
         exit 1
     fi
 
     log_header "Khôi phục Cơ Sở Dữ Liệu"
-    log_warning "Thao tác này sẽ ghi đè dữ liệu hiện tại trong truyenkomi_db. Bạn có chắc chắn không? (y/N)"
+    log_warning "Thao tác này sẽ ghi đè toàn bộ dữ liệu hiện tại trong truyenkomi_db. Bạn có chắc chắn không? (y/N)"
     read -r confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         log_info "Đã hủy thao tác khôi phục."
@@ -272,6 +306,33 @@ restore_database() {
         $DOCKER_COMPOSE exec -T postgres psql -U postgres truyenkomi_db < "$file"
     fi
     log_success "Khôi phục cơ sở dữ liệu thành công!"
+}
+
+# --- Restore Database from Cloudflare R2 ---
+restore_r2_database() {
+    local remote_key="${1:-}"
+    if [ -z "$remote_key" ]; then
+        log_error "Vui lòng cung cấp tên tệp sao lưu trên Cloudflare R2."
+        echo "Ví dụ: $0 --restore-r2 truyenkomi_backup_20260916_120000.sql.gz"
+        echo "Xem danh sách các bản sao lưu: $0 --list-r2"
+        exit 1
+    fi
+
+    log_header "Khôi phục Cơ Sở Dữ Liệu từ Cloudflare R2"
+    mkdir -p "$BACKUP_DIR"
+    local base_name
+    base_name=$(basename "$remote_key")
+    local local_dest="${BACKUP_DIR}/${base_name}"
+
+    log_info "1. Đang tải tệp '$remote_key' từ Cloudflare R2..."
+    if run_r2_backup_script download "$remote_key" "$local_dest"; then
+        log_success "Đã tải tệp sao lưu về: $local_dest"
+        log_info "2. Bắt đầu khôi phục vào PostgreSQL..."
+        restore_database "$local_dest"
+    else
+        log_error "Tải bản sao lưu từ Cloudflare R2 thất bại."
+        exit 1
+    fi
 }
 
 # --- Display Dashboard Summary ---
@@ -296,8 +357,9 @@ show_summary() {
     echo -e "   - Xem logs crawler:         ${YELLOW}$0 --logs crawler${NC}"
     echo -e "   - Kiểm tra trạng thái:      ${YELLOW}$0 --status${NC}"
     echo -e "   - Nạp dữ liệu mẫu:          ${YELLOW}$0 --seed${NC}"
-    echo -e "   - Sao lưu dữ liệu:          ${YELLOW}$0 --backup${NC}"
-    echo -e "   - Dừng toàn bộ hệ thống:    ${YELLOW}$0 --down${NC}"
+    echo -e "   - Sao lưu dữ liệu (Local + R2): ${YELLOW}$0 --backup${NC}"
+    echo -e "   - Xem danh sách backup trên R2: ${YELLOW}$0 --list-r2${NC}"
+    echo -e "   - Dừng toàn bộ hệ thống:        ${YELLOW}$0 --down${NC}"
     echo ""
 }
 
@@ -342,8 +404,10 @@ show_help() {
     echo "  --status               : Xem trạng thái và RAM/CPU của tất cả containers"
     echo "  --down                 : Dừng và gỡ bỏ containers (dữ liệu vẫn được giữ trong volume)"
     echo "  --clean                : Dừng containers và xóa các image rác / unused"
-    echo "  --backup               : Sao lưu CSDL PostgreSQL ra file nén .sql.gz"
-    echo "  --restore <file.sql>   : Khôi phục CSDL từ file sao lưu"
+    echo "  --backup               : Sao lưu CSDL PostgreSQL cục bộ và tự động tải lên Cloudflare R2"
+    echo "  --list-r2              : Liệt kê toàn bộ các bản sao lưu đang lưu trên Cloudflare R2"
+    echo "  --restore <file.sql>   : Khôi phục CSDL từ file sao lưu cục bộ"
+    echo "  --restore-r2 <file>    : Tải bản sao lưu từ Cloudflare R2 về và khôi phục vào CSDL"
     echo "  --help, -h             : Hiển thị bảng trợ giúp này"
     echo ""
 }
@@ -406,13 +470,21 @@ case "$ACTION" in
         docker image prune -f
         log_success "Dọn dẹp hoàn tất!"
         ;;
-    --backup|backup)
+    --backup|backup|--backup-r2)
         check_prerequisites
         backup_database
+        ;;
+    --list-r2|list-r2)
+        check_prerequisites
+        list_r2_backups
         ;;
     --restore|restore)
         check_prerequisites
         restore_database "${2:-}"
+        ;;
+    --restore-r2|restore-r2)
+        check_prerequisites
+        restore_r2_database "${2:-}"
         ;;
     --help|-h|help)
         show_help

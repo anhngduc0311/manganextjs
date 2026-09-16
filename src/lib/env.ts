@@ -32,6 +32,8 @@ function parseEnv() {
   const isTest = process.env.NODE_ENV === "test" || Boolean(process.env.VITEST);
   const envToParse = {
     ...process.env,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || process.env.CF_R2_ACCESS_KEY,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY || process.env.CF_R2_SECRET_KEY,
     DATABASE_URL:
       process.env.DATABASE_URL ||
       (isTest ? "postgresql://postgres:postgres@localhost:5433/test" : undefined),

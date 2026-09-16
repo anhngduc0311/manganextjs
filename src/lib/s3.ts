@@ -1,6 +1,9 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { env, hasR2 } from "@/lib/env";
 
+import { NodeHttpHandler } from "@smithy/node-http-handler";
+import https from "https";
+
 const globalForS3 = globalThis as unknown as { r2Client?: S3Client };
 
 export const r2Client: S3Client | null = hasR2
@@ -12,6 +15,12 @@ export const r2Client: S3Client | null = hasR2
           accessKeyId: env.R2_ACCESS_KEY_ID!,
           secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
         },
+        forcePathStyle: true,
+        requestHandler: new NodeHttpHandler({
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false,
+          }),
+        }),
       }))
   : null;
 
