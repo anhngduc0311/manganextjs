@@ -60,17 +60,13 @@ COPY --from=builder /app/public ./public
 # Set permissions for prerender cache
 RUN mkdir .next && chown nextjs:nodejs .next
 
+# Copy full node_modules to guarantee all runtime tools (Prisma CLI, effect, scripts) work 100%
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
 # Copy Next.js standalone build artifacts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy Prisma CLI & runtime migrations/seed
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-# Copy utility scripts (backup, maintenance, etc.)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 USER nextjs

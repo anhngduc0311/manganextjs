@@ -209,7 +209,8 @@ run_migrations() {
     log_info "Đang chạy Prisma database migrations..."
     
     # Run migrations using the local Prisma CLI in the container (no npm/npx download)
-    if $DOCKER_COMPOSE run --rm --no-deps web node node_modules/prisma/build/index.js migrate deploy; then
+    if $DOCKER_COMPOSE run --rm --no-deps web ./node_modules/.bin/prisma migrate deploy 2>/dev/null || \
+       $DOCKER_COMPOSE run --rm --no-deps web node node_modules/prisma/build/index.js migrate deploy; then
         log_success "Prisma migrations đã được áp dụng thành công!"
     else
         log_error "Prisma migration thất bại. Dừng triển khai để tránh bỏ qua cập nhật dữ liệu."
