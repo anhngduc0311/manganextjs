@@ -8,19 +8,31 @@ export const metadata = {
 };
 
 export default async function AdminComicsPage() {
-  const [comicsRows, categoriesRows] = await Promise.all([
+  const [comicsRows, categoriesRows, chapter1Comics] = await Promise.all([
     prisma.comic.findMany({
       orderBy: { updatedAt: "desc" },
       include: {
         categories: { include: { category: { select: { id: true, name: true } } } },
         _count: { select: { chapters: true } },
+        chapters: {
+          orderBy: { chapterNumber: "asc" },
+          take: 1,
+          select: { chapterNumber: true },
+        },
       },
     }),
     prisma.category.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, slug: true, description: true },
     }),
+    prisma.chapter.findMany({
+      where: { chapterNumber: 1 },
+      select: { comicId: true },
+      distinct: ["comicId"],
+    }),
   ]);
+
+  const comicIdsWithChapter1 = new Set(chapter1Comics.map((c) => c.comicId));
 
   const comics: ComicRow[] = comicsRows.map((c) => ({
     id: c.id,
@@ -36,6 +48,8 @@ export default async function AdminComicsPage() {
     ratingAvg: c.ratingAvg,
     ratingCount: c.ratingCount,
     chapterCount: c._count.chapters,
+    hasChapter1: comicIdsWithChapter1.has(c.id),
+    firstChapterNumber: c.chapters[0]?.chapterNumber ?? null,
     updatedAt: c.updatedAt.toISOString(),
     categories: c.categories.map((cg) => ({ id: cg.category.id, name: cg.category.name })),
   }));

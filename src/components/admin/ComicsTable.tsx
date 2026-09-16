@@ -3,7 +3,20 @@
 import React, { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Plus, Edit2, Trash2, Layers, Eye, Star, ExternalLink, RefreshCw } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  Layers,
+  Eye,
+  Star,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  BookOpen,
+  CheckCircle2,
+} from "lucide-react";
 import { ComicModalForm, type ComicFormData } from "./ComicModalForm";
 import { deleteComicAction, scanMangaDexUpdatesAction } from "@/actions/comic.actions";
 import { toast } from "@/stores/toast-store";
@@ -23,6 +36,8 @@ export interface ComicRow {
   ratingAvg: number;
   ratingCount: number;
   chapterCount: number;
+  hasChapter1: boolean;
+  firstChapterNumber: number | null;
   updatedAt: string;
   categories: Array<{ id: string; name: string }>;
 }
@@ -34,11 +49,18 @@ export interface ComicsTableProps {
 
 export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [filterMode, setFilterMode] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingComic, setEditingComic] = useState<ComicFormData | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isScanning, setIsScanning] = useState(false);
+
+  // Counters
+  const totalCount = initialComics.length;
+  const missingCh1Count = initialComics.filter((c) => !c.hasChapter1 && c.chapterCount > 0).length;
+  const zeroChapterCount = initialComics.filter((c) => c.chapterCount === 0).length;
+  const hasCh1Count = initialComics.filter((c) => c.hasChapter1).length;
+  const totalChapters = initialComics.reduce((sum, c) => sum + c.chapterCount, 0);
 
   const filtered = initialComics.filter((c) => {
     const matchSearch =
@@ -47,8 +69,18 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
       c.slug.toLowerCase().includes(search.toLowerCase()) ||
       (c.author && c.author.toLowerCase().includes(search.toLowerCase()));
 
-    const matchStatus = statusFilter === "ALL" || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    let matchFilter = true;
+    if (filterMode === "MISSING_CH1") {
+      matchFilter = !c.hasChapter1 && c.chapterCount > 0;
+    } else if (filterMode === "NO_CHAPTERS") {
+      matchFilter = c.chapterCount === 0;
+    } else if (filterMode === "HAS_CH1") {
+      matchFilter = c.hasChapter1;
+    } else if (filterMode === "ONGOING" || filterMode === "COMPLETED" || filterMode === "DROPPED") {
+      matchFilter = c.status === filterMode;
+    }
+
+    return matchSearch && matchFilter;
   });
 
   const handleOpenCreate = () => {
@@ -116,54 +148,197 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex flex-1 items-center gap-3">
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm theo tên truyện, tác giả, slug..."
-              className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 pl-10 pr-4 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 outline-none focus:border-orange-500 transition"
-            />
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* All Comics */}
+        <button
+          onClick={() => setFilterMode("ALL")}
+          className={`flex flex-col items-start p-3.5 rounded-2xl border transition text-left cursor-pointer ${
+            filterMode === "ALL"
+              ? "bg-zinc-800/90 border-orange-500/50 shadow-md shadow-orange-500/10"
+              : "bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-800/50"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-zinc-400 text-xs font-semibold">
+            <BookOpen className="h-3.5 w-3.5 text-orange-400" />
+            <span>Tổng số truyện</span>
           </div>
+          <span className="text-xl font-black text-white mt-1.5">{totalCount}</span>
+        </button>
 
-          {/* Status Filter */}
-          <div className="relative shrink-0">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 outline-none focus:border-orange-500 transition"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ONGOING">Đang tiến hành</option>
-              <option value="COMPLETED">Đã hoàn thành</option>
-              <option value="DROPPED">Tạm ngưng</option>
-            </select>
+        {/* Missing Chapter 1 (Highlight Filter) */}
+        <button
+          onClick={() => setFilterMode("MISSING_CH1")}
+          className={`flex flex-col items-start p-3.5 rounded-2xl border transition text-left cursor-pointer ${
+            filterMode === "MISSING_CH1"
+              ? "bg-amber-500/15 border-amber-500/60 shadow-md shadow-amber-500/10"
+              : "bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-800/50"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+            <span>Thiếu Chapter 1</span>
           </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-xl font-black text-amber-300">{missingCh1Count}</span>
+            {missingCh1Count > 0 && (
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full font-bold">
+                Cần bổ sung
+              </span>
+            )}
+          </div>
+        </button>
+
+        {/* Has Chapter 1 */}
+        <button
+          onClick={() => setFilterMode("HAS_CH1")}
+          className={`flex flex-col items-start p-3.5 rounded-2xl border transition text-left cursor-pointer ${
+            filterMode === "HAS_CH1"
+              ? "bg-emerald-500/15 border-emerald-500/60 shadow-md shadow-emerald-500/10"
+              : "bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-800/50"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Đủ Chapter 1</span>
+          </div>
+          <span className="text-xl font-black text-emerald-300 mt-1.5">{hasCh1Count}</span>
+        </button>
+
+        {/* Total Chapters */}
+        <div className="flex flex-col items-start p-3.5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60">
+          <div className="flex items-center gap-2 text-zinc-400 text-xs font-semibold">
+            <Layers className="h-3.5 w-3.5 text-blue-400" />
+            <span>Tổng số chương</span>
+          </div>
+          <span className="text-xl font-black text-white mt-1.5">{totalChapters.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search Bar */}
+      <div className="flex flex-col gap-3">
+        {/* Quick Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setFilterMode("ALL")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "ALL"
+                ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            Tất cả ({totalCount})
+          </button>
+
+          <button
+            onClick={() => setFilterMode("MISSING_CH1")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "MISSING_CH1"
+                ? "bg-amber-500 text-zinc-950 font-black shadow-md shadow-amber-500/20"
+                : "bg-zinc-800/80 text-amber-400 hover:bg-zinc-800 hover:text-amber-300"
+            }`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Thiếu Chapter 1 ({missingCh1Count})</span>
+          </button>
+
+          <button
+            onClick={() => setFilterMode("HAS_CH1")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "HAS_CH1"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            Đủ Chapter 1 ({hasCh1Count})
+          </button>
+
+          <button
+            onClick={() => setFilterMode("NO_CHAPTERS")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "NO_CHAPTERS"
+                ? "bg-rose-600 text-white shadow-md shadow-rose-600/20"
+                : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            0 chương ({zeroChapterCount})
+          </button>
+
+          <button
+            onClick={() => setFilterMode("ONGOING")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "ONGOING"
+                ? "bg-zinc-200 text-zinc-900"
+                : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            Đang tiến hành
+          </button>
+
+          <button
+            onClick={() => setFilterMode("COMPLETED")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              filterMode === "COMPLETED"
+                ? "bg-zinc-200 text-zinc-900"
+                : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            Đã hoàn thành
+          </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={handleScanUpdates}
-            disabled={isScanning}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800/90 px-4 py-2.5 text-xs font-bold text-zinc-200 shadow-md hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
-            title="Quét các truyện vừa có chương mới trên MangaDex và nạp chương mới vào hệ thống"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-orange-400 ${isScanning ? "animate-spin" : ""}`} />
-            {isScanning ? "Đang quét MangaDex..." : "Quét truyện mới cập nhật"}
-          </button>
+        {/* Top Header & Search Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex flex-1 items-center gap-3">
+            {/* Search Box */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-zinc-500 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm theo tên truyện, tác giả, slug..."
+                className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 pl-10 pr-4 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 outline-none focus:border-orange-500 transition"
+              />
+            </div>
 
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Thêm truyện mới
-          </button>
+            {/* Dropdown Filter */}
+            <div className="relative shrink-0">
+              <select
+                value={filterMode}
+                onChange={(e) => setFilterMode(e.target.value)}
+                className="h-10 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 outline-none focus:border-orange-500 transition"
+              >
+                <option value="ALL">Tất cả truyện</option>
+                <option value="MISSING_CH1">⚠️ Thiếu Chapter 1</option>
+                <option value="HAS_CH1">✓ Đủ Chapter 1</option>
+                <option value="NO_CHAPTERS">Chưa có chương (0)</option>
+                <option value="ONGOING">Đang tiến hành</option>
+                <option value="COMPLETED">Đã hoàn thành</option>
+                <option value="DROPPED">Tạm ngưng</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={handleScanUpdates}
+              disabled={isScanning}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800/90 px-4 py-2.5 text-xs font-bold text-zinc-200 shadow-md hover:bg-zinc-700 hover:text-white transition cursor-pointer disabled:opacity-50"
+              title="Quét các truyện vừa có chương mới trên MangaDex và nạp chương mới vào hệ thống"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 text-orange-400 ${isScanning ? "animate-spin" : ""}`} />
+              {isScanning ? "Đang quét MangaDex..." : "Quét truyện mới cập nhật"}
+            </button>
+
+            <button
+              onClick={handleOpenCreate}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Thêm truyện mới
+            </button>
+          </div>
         </div>
       </div>
 
@@ -186,7 +361,7 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-zinc-500">
-                    Không tìm thấy bộ truyện nào phù hợp
+                    Không tìm thấy bộ truyện nào phù hợp với bộ lọc hiện tại
                   </td>
                 </tr>
               ) : (
@@ -241,15 +416,36 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
                       </div>
                     </td>
 
-                    {/* Chapters */}
-                    <td className="py-3 px-4 font-semibold text-zinc-300">
-                      <Link
-                        href={`/admin/chapters?comicId=${comic.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg bg-zinc-800/80 px-2 py-1 text-xs font-semibold text-zinc-300 hover:bg-orange-500/20 hover:text-orange-400 transition"
-                      >
-                        <Layers className="h-3 w-3" />
-                        <span>{comic.chapterCount} chương</span>
-                      </Link>
+                    {/* Chapters & Missing Chapter 1 Status */}
+                    <td className="py-3 px-4 font-semibold">
+                      <div className="flex flex-col items-start gap-1">
+                        <Link
+                          href={`/admin/chapters?comicId=${comic.id}`}
+                          className="inline-flex items-center gap-1 rounded-lg bg-zinc-800/80 px-2 py-1 text-xs font-semibold text-zinc-300 hover:bg-orange-500/20 hover:text-orange-400 transition"
+                        >
+                          <Layers className="h-3 w-3" />
+                          <span>{comic.chapterCount} chương</span>
+                        </Link>
+
+                        {/* Badges for Missing Chapter 1 or Zero chapters */}
+                        {!comic.hasChapter1 && comic.chapterCount > 0 ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-bold text-amber-400"
+                            title={`Truyện không có Chapter 1 trên hệ thống (Bắt đầu từ Chapter ${comic.firstChapterNumber})`}
+                          >
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            <span>Thiếu Chap 1 {comic.firstChapterNumber ? `(từ #${comic.firstChapterNumber})` : ""}</span>
+                          </span>
+                        ) : comic.chapterCount === 0 ? (
+                          <span className="inline-flex items-center rounded-md bg-rose-500/10 border border-rose-500/30 px-1.5 py-0.5 text-[10px] font-bold text-rose-400">
+                            Chưa có chương
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-400/80">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Có Chap 1
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Views */}
@@ -319,3 +515,4 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
     </div>
   );
 }
+

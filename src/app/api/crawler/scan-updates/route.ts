@@ -113,6 +113,8 @@ export async function POST(req: NextRequest) {
           status: manga.status,
           coverImage: manga.coverUrl,
           description: manga.description || `Đọc truyện ${manga.title} bản dịch tiếng Việt mới nhất online tại TruyenKomi.`,
+          createdAt: manga.createdAt ? new Date(manga.createdAt) : new Date(),
+          updatedAt: manga.updatedAt ? new Date(manga.updatedAt) : new Date(),
           categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
         },
         update: {
@@ -123,7 +125,7 @@ export async function POST(req: NextRequest) {
           status: manga.status,
           coverImage: manga.coverUrl,
           description: manga.description || undefined,
-          updatedAt: new Date(),
+          updatedAt: manga.updatedAt ? new Date(manga.updatedAt) : new Date(),
           categories: {
             deleteMany: {},
             create: categoryIds.map((categoryId) => ({ categoryId })),
@@ -135,6 +137,17 @@ export async function POST(req: NextRequest) {
       // Get chapters
       const chapters = await mangadexService.getVietnameseChapters(manga.id);
       if (chapters.length === 0) continue;
+
+      // Calculate latest update time from chapters
+      let latestUpdateTime = manga.updatedAt ? new Date(manga.updatedAt) : new Date();
+      for (const ch of chapters) {
+        if (ch.publishedAt) {
+          const pDate = new Date(ch.publishedAt);
+          if (!isNaN(pDate.getTime()) && pDate.getTime() > latestUpdateTime.getTime()) {
+            latestUpdateTime = pDate;
+          }
+        }
+      }
 
       // Existing chapters map
       const existingChapters = await prisma.chapter.findMany({
@@ -154,7 +167,12 @@ export async function POST(req: NextRequest) {
       });
 
       if (missingChapters.length === 0) {
-        continue; // No new chapters -> skip instantly
+        // Sync comic.updatedAt with latest release date
+        await prisma.comic.update({
+          where: { id: comic.id },
+          data: { updatedAt: latestUpdateTime },
+        });
+        continue;
       }
 
       let newlySyncedPages = 0;
@@ -166,6 +184,7 @@ export async function POST(req: NextRequest) {
           const pages = atHomeData.pages;
           if (pages.length === 0) continue;
 
+          const chapterDate = ch.publishedAt ? new Date(ch.publishedAt) : new Date();
           await prisma.$transaction(async (tx) => {
             await tx.chapter.upsert({
               where: {
@@ -179,6 +198,7 @@ export async function POST(req: NextRequest) {
                 chapterNumber: ch.chapterNumber,
                 title: ch.title || `Chương ${ch.chapterNumber}`,
                 views: BigInt(Math.floor(Math.random() * 200) + 10),
+                createdAt: chapterDate,
                 pages: {
                   create: pages.map((p) => ({
                     pageIndex: p.pageIndex,
@@ -188,6 +208,7 @@ export async function POST(req: NextRequest) {
               },
               update: {
                 title: ch.title || `Chương ${ch.chapterNumber}`,
+                createdAt: chapterDate,
                 pages: {
                   deleteMany: {},
                   create: pages.map((p) => ({
@@ -218,7 +239,7 @@ export async function POST(req: NextRequest) {
         await prisma.comic.update({
           where: { id: comic.id },
           data: {
-            updatedAt: new Date(),
+            updatedAt: latestUpdateTime,
             chapterCount,
             latestChapterNumber: latest?.chapterNumber ?? null,
           },

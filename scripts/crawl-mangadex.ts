@@ -204,6 +204,8 @@ async function syncSingleManga(
       status: manga.status,
       coverImage: manga.coverUrl,
       description: manga.description || `Đọc truyện ${manga.title} bản dịch tiếng Việt mới nhất online tại TruyenKomi.`,
+      createdAt: manga.createdAt ? new Date(manga.createdAt) : new Date(),
+      updatedAt: manga.updatedAt ? new Date(manga.updatedAt) : new Date(),
       categories: {
         create: categoryIds.map((categoryId) => ({ categoryId })),
       },
@@ -216,7 +218,7 @@ async function syncSingleManga(
       status: manga.status,
       coverImage: manga.coverUrl,
       description: manga.description || undefined,
-      updatedAt: new Date(),
+      updatedAt: manga.updatedAt ? new Date(manga.updatedAt) : new Date(),
       categories: {
         deleteMany: {},
         create: categoryIds.map((categoryId) => ({ categoryId })),
@@ -234,6 +236,17 @@ async function syncSingleManga(
   if (chapters.length === 0) {
     console.log(`⚠️ Không tìm thấy chương tiếng Việt nào cho "${manga.title}".`);
     return { success: true, chaptersCount: 0, pagesCount: 0 };
+  }
+
+  // Calculate the comic's latest update time from chapters (newest publishedAt) or fallback to manga.updatedAt
+  let latestUpdateTime = manga.updatedAt ? new Date(manga.updatedAt) : new Date();
+  for (const ch of chapters) {
+    if (ch.publishedAt) {
+      const pDate = new Date(ch.publishedAt);
+      if (!isNaN(pDate.getTime()) && pDate.getTime() > latestUpdateTime.getTime()) {
+        latestUpdateTime = pDate;
+      }
+    }
   }
 
   if (options.maxChapters && options.maxChapters > 0) {
@@ -263,7 +276,11 @@ async function syncSingleManga(
   });
 
   if (missingOrEmptyChapters.length === 0 && !options.force) {
-    console.log(`⚡ Toàn bộ ${chapters.length} chương của truyện "${manga.title}" đã có trong DB với đầy đủ trang ảnh. Bỏ qua cào lại.`);
+    console.log(`⚡ Toàn bộ ${chapters.length} chương của truyện "${manga.title}" đã có trong DB với đầy đủ trang ảnh. Cập nhật ngày giờ phát hành chuẩn...`);
+    await prisma.comic.update({
+      where: { id: comic.id },
+      data: { updatedAt: latestUpdateTime },
+    });
     const totalExistingPages = existingChapters.reduce((sum, c) => sum + c._count.pages, 0);
     return { success: true, chaptersCount: existingChapters.length, pagesCount: totalExistingPages };
   }
@@ -297,7 +314,8 @@ async function syncSingleManga(
         continue;
       }
 
-      // Upsert Chapter & Pages into Database
+      // Upsert Chapter & Pages into Database with real published date
+      const chapterDate = ch.publishedAt ? new Date(ch.publishedAt) : new Date();
       await prisma.$transaction(async (tx) => {
         const savedChapter = await tx.chapter.upsert({
           where: {
@@ -311,6 +329,7 @@ async function syncSingleManga(
             chapterNumber: ch.chapterNumber,
             title: ch.title || `Chương ${ch.chapterNumber}`,
             views: BigInt(Math.floor(Math.random() * 200) + 10),
+            createdAt: chapterDate,
             pages: {
               create: pages.map((p) => ({
                 pageIndex: p.pageIndex,
@@ -320,6 +339,7 @@ async function syncSingleManga(
           },
           update: {
             title: ch.title || `Chương ${ch.chapterNumber}`,
+            createdAt: chapterDate,
             pages: {
               deleteMany: {},
               create: pages.map((p) => ({
@@ -332,7 +352,7 @@ async function syncSingleManga(
         return savedChapter;
       });
 
-      console.log(`  ${progressStr} ✅ Chương ${ch.chapterNumber} ("${ch.title}"): Đã lưu ${pages.length} trang ảnh.`);
+      console.log(`  ${progressStr} ✅ Chương ${ch.chapterNumber} ("${ch.title}"): Đã lưu ${pages.length} trang ảnh (ngày: ${chapterDate.toISOString().slice(0, 10)}).`);
       chaptersSynced++;
       newlySyncedCount++;
       totalPagesSynced += pages.length;
@@ -356,7 +376,7 @@ async function syncSingleManga(
   await prisma.comic.update({
     where: { id: comic.id },
     data: {
-      updatedAt: new Date(),
+      updatedAt: latestUpdateTime,
       chapterCount,
       latestChapterNumber: latest?.chapterNumber ?? null,
     },
