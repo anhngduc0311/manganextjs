@@ -31,7 +31,7 @@ import {
 } from "../src/services/mangadex.service";
 import { toSlug, toUnaccent } from "../src/lib/text-normalizer";
 
-const CHECKPOINT_FILE = path.join(process.cwd(), ".mangadex-checkpoint.json");
+const CHECKPOINT_FILE = process.env.CHECKPOINT_FILE || path.join(process.cwd(), ".mangadex-checkpoint.json");
 
 interface CheckpointData {
   lastOffset: number;
@@ -61,13 +61,17 @@ function loadCheckpoint(): CheckpointData {
 
 function saveCheckpoint(data: CheckpointData) {
   try {
+    const dir = path.dirname(CHECKPOINT_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(CHECKPOINT_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     console.warn("⚠️ Failed to write checkpoint file:", err);
   }
 }
 
-// Parse CLI Arguments
+// Parse CLI Arguments & Environment Variables
 const args = process.argv.slice(2);
 const getArg = (name: string, fallback = ""): string => {
   const arg = args.find((a) => a.startsWith(`--${name}=`));
@@ -75,14 +79,18 @@ const getArg = (name: string, fallback = ""): string => {
 };
 const hasFlag = (name: string): boolean => args.includes(`--${name}`);
 
-const isAll = hasFlag("all");
-const isResume = hasFlag("resume");
-const isSkipExisting = hasFlag("skip-existing");
-const targetMangaId = getArg("manga");
-const orderArg = (getArg("order", "latest") as "latest" | "created" | "updated");
-const qualityArg = (getArg("quality", "original") as "original" | "dataSaver");
-const limitArg = isAll ? 99999 : parseInt(getArg("limit", "10"), 10);
-const maxChaptersArg = getArg("max-chapters") ? parseInt(getArg("max-chapters"), 10) : undefined;
+const isContinuous = hasFlag("continuous") || process.env.CRAWLER_CONTINUOUS === "true";
+const intervalMinutes = parseInt(getArg("interval", process.env.CRAWLER_INTERVAL_MINUTES || "10"), 10);
+const isAll = hasFlag("all") || process.env.CRAWLER_ALL === "true";
+const isResume = hasFlag("resume") || process.env.CRAWLER_RESUME === "true";
+const isSkipExisting = hasFlag("skip-existing") || process.env.CRAWLER_SKIP_EXISTING === "true";
+const targetMangaId = getArg("manga", process.env.CRAWLER_MANGA_ID || "");
+const orderArg = (getArg("order", process.env.CRAWLER_ORDER || "latest") as "latest" | "created" | "updated");
+const qualityArg = (getArg("quality", process.env.CRAWLER_QUALITY || "original") as "original" | "dataSaver");
+const limitArg = isAll ? 99999 : parseInt(getArg("limit", process.env.CRAWLER_LIMIT || "20"), 10);
+const maxChaptersArg = getArg("max-chapters", process.env.CRAWLER_MAX_CHAPTERS || "")
+  ? parseInt(getArg("max-chapters", process.env.CRAWLER_MAX_CHAPTERS || ""), 10)
+  : undefined;
 
 async function getOrCreateCategories(tags: string[]): Promise<string[]> {
   const categoryIds: string[] = [];
@@ -319,15 +327,42 @@ async function syncSingleManga(
     data: { updatedAt: new Date() },
   });
 
+  // Index into Meilisearch if configured
+  try {
+    const { meiliService } = await import("../src/lib/meilisearch");
+    await meiliService.indexComics([
+      {
+        id: comic.id,
+        title: manga.title,
+        titleUnaccent: toUnaccent(manga.title),
+        slug: comic.slug,
+        otherNames: manga.otherNames,
+        author: manga.author,
+        status: manga.status,
+        coverImage: manga.coverUrl,
+        views: 0,
+        ratingAvg: 5.0,
+        ratingCount: 1,
+        chapterCount: chaptersSynced,
+        categories: manga.categories.map((c) => translateMangaDexGenre(c)),
+        updatedAt: new Date().toISOString(),
+        createdAt: manga.createdAt || new Date().toISOString(),
+      },
+    ]);
+  } catch (err) {
+    // Non-blocking fallback
+  }
+
   console.log(`🎉 Hoàn tất truyện "${manga.title}": ${chaptersSynced}/${chapters.length} chương (${totalPagesSynced} trang).`);
   return { success: true, chaptersCount: chaptersSynced, pagesCount: totalPagesSynced };
 }
 
-async function main() {
+async function runCrawlBatch() {
   console.log("=============================================================");
   console.log("🚀 TRUYENKOMI - MANGADEX VIETNAMESE CRAWLER & SYNC");
   console.log("=============================================================");
   console.log(`Options:`);
+  console.log(` - Chế độ: ${isContinuous ? `Chạy định kỳ (mỗi ${intervalMinutes} phút)` : "Chạy 1 lần"}`);
   console.log(` - Giới hạn truyện: ${isAll ? "TOÀN BỘ (Tất cả)" : limitArg}`);
   console.log(` - Sắp xếp: ${orderArg} (từ mới nhất)`);
   console.log(` - Chất lượng ảnh: ${qualityArg}`);
@@ -361,7 +396,6 @@ async function main() {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("❌ Lỗi khi crawl truyện đơn:", msg);
     }
-    await prisma.$disconnect();
     return;
   }
 
@@ -441,10 +475,46 @@ async function main() {
   console.log(`✅ Số truyện đã xử lý: ${totalProcessed}`);
   console.log(`✅ Tổng số chương đã lưu: ${grandTotalChapters}`);
   console.log(`✅ Tổng số trang ảnh đã lưu: ${grandTotalPages}`);
-  console.log(`💾 Checkpoint đã lưu tại: .mangadex-checkpoint.json (Offset: ${currentOffset})`);
+  console.log(`💾 Checkpoint đã lưu tại: ${CHECKPOINT_FILE} (Offset: ${currentOffset})`);
   console.log("=============================================================\n");
+}
 
-  await prisma.$disconnect();
+async function main() {
+  if (!isContinuous) {
+    await runCrawlBatch();
+    await prisma.$disconnect();
+    return;
+  }
+
+  console.log(`\n🔄 Kích hoạt chế độ CRAWLER DAEMON trong Docker (Tần suất: mỗi ${intervalMinutes} phút)...\n`);
+  let cycle = 1;
+
+  const runLoop = async () => {
+    while (true) {
+      console.log(`\n=============================================================`);
+      console.log(`⏱️ BẮT ĐẦU CHU KỲ CRAWL #${cycle} - ${new Date().toLocaleString("vi-VN")}`);
+      console.log(`=============================================================`);
+      try {
+        await runCrawlBatch();
+      } catch (err) {
+        console.error(`❌ Lỗi chu kỳ crawl #${cycle}:`, err);
+      }
+      console.log(`💤 Hoàn thành chu kỳ #${cycle}. Nghỉ ${intervalMinutes} phút trước đợt tiếp theo...`);
+      cycle++;
+      await sleep(intervalMinutes * 60 * 1000);
+    }
+  };
+
+  const handleShutdown = async () => {
+    console.log("\n🛑 Đang dừng Crawler Container gracefully...");
+    await prisma.$disconnect();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", handleShutdown);
+  process.on("SIGTERM", handleShutdown);
+
+  await runLoop();
 }
 
 main().catch(async (e) => {
@@ -452,3 +522,4 @@ main().catch(async (e) => {
   await prisma.$disconnect();
   process.exit(1);
 });
+

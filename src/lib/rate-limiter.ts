@@ -6,7 +6,7 @@ type Duration = Parameters<typeof Ratelimit.slidingWindow>[1];
 function makeLimiter(requests: number, window: Duration, prefix: string) {
   if (!redisRest) return null;
   return new Ratelimit({
-    redis: redisRest,
+    redis: redisRest as any,
     limiter: Ratelimit.slidingWindow(requests, window),
     prefix: `rl:${prefix}`,
   });

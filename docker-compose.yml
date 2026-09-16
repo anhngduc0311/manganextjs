@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: truyenkomi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: truyenkomi_db
+    ports:
+      # Port 5438 on host -> 5432 in container (avoid conflict with 5432, 5433, 5435)
+      - "5438:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d truyenkomi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: truyenkomi_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      # Port 6385 on host -> 6379 in container (avoid conflict with 6379, 6380, 6382)
+      - "6385:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: truyenkomi_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: truyenkomi_meili_master_key_2026
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      # Port 7705 on host -> 7700 in container (avoid conflict with 7700, 7701, 7703)
+      - "7705:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile.crawler
+    container_name: truyenkomi_crawler
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgrespassword@postgres:5432/truyenkomi_db?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      UPSTASH_REDIS_URL_TCP: "redis://redis:6379"
+      MEILISEARCH_HOST: "http://meilisearch:7700"
+      MEILISEARCH_MASTER_KEY: "truyenkomi_meili_master_key_2026"
+      CRAWLER_CONTINUOUS: "true"
+      CRAWLER_INTERVAL_MINUTES: "10"
+      CRAWLER_LIMIT: "20"
+      CHECKPOINT_FILE: "/app/.checkpoint/.mangadex-checkpoint.json"
+    volumes:
+      - crawler_checkpoint:/app/.checkpoint
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  crawler_checkpoint:
+    driver: local
+
+

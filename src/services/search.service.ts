@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { toUnaccent } from "@/lib/text-normalizer";
 import { cacheService } from "@/services/cache.service";
+import { meiliService } from "@/lib/meilisearch";
 import { logger } from "@/lib/logger";
 import type { ComicCardDTO } from "@/types";
 
@@ -45,9 +46,34 @@ export const searchService = {
     const cacheKey = `search:${normalized}:${limit}:${offset}`;
 
     return cacheService.cached(cacheKey, ["search", "comic-list"], 300, async () => {
+      const started = Date.now();
+
+      // 1. Try Meilisearch first if configured
+      try {
+        const meiliRes = await meiliService.search(trimmed, { limit, offset });
+        if (meiliRes && meiliRes.hits.length > 0) {
+          logger.debug({ took: Date.now() - started, query: trimmed, results: meiliRes.hits.length, engine: "meilisearch" }, "search timing");
+          return meiliRes.hits.map((h: any) => ({
+            id: h.id,
+            title: h.title,
+            slug: h.slug,
+            coverImage: h.coverImage,
+            status: h.status,
+            views: Number(h.views || 0),
+            ratingAvg: Number(h.ratingAvg || 0),
+            ratingCount: Number(h.ratingCount || 0),
+            chapterCount: Number(h.chapterCount || 0),
+            updatedAt: h.updatedAt || new Date().toISOString(),
+            categories: (h.categories || []).map((catName: string) => ({ name: catName, slug: toUnaccent(catName) })),
+          }));
+        }
+      } catch (err) {
+        logger.warn({ err }, "Meilisearch query failed, fallback to DB");
+      }
+
+      // 2. Fallback to PostgreSQL pg_trgm / ILIKE query
       const like = `%${normalized}%`;
       const rawLike = `%${trimmed.toLowerCase()}%`;
-      const started = Date.now();
 
       const rows = await prisma.$queryRaw<RawSearchRow[]>(Prisma.sql`
         SELECT c."id", c."title", c."slug", c."coverImage", c."status", c."views", c."ratingAvg", c."ratingCount",
@@ -63,7 +89,7 @@ export const searchService = {
         LIMIT ${limit} OFFSET ${offset}
       `);
 
-      logger.debug({ took: Date.now() - started, query: trimmed, results: rows.length }, "search timing");
+      logger.debug({ took: Date.now() - started, query: trimmed, results: rows.length, engine: "postgres" }, "search timing");
       return rows.map(mapRow);
     });
   }),
@@ -79,6 +105,15 @@ export const searchService = {
     const cacheKey = `search:count:${normalized}`;
 
     return cacheService.cached(cacheKey, ["search"], 300, async () => {
+      // 1. Try Meilisearch first
+      try {
+        const meiliRes = await meiliService.search(trimmed, { limit: 1 });
+        if (meiliRes && typeof meiliRes.estimatedTotalHits === "number") {
+          return meiliRes.estimatedTotalHits;
+        }
+      } catch {}
+
+      // 2. Fallback to DB
       const like = `%${normalized}%`;
       const rawLike = `%${trimmed.toLowerCase()}%`;
       const rows = await prisma.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
@@ -92,4 +127,5 @@ export const searchService = {
     });
   }),
 };
+
 

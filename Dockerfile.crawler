@@ -1,0 +1,26 @@
+FROM node:20-alpine AS base
+
+# Install OpenSSL & libc6 for Prisma engine support on Alpine
+RUN apk add --no-cache libc6-compat openssl
+
+WORKDIR /app
+
+# Install npm dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# Copy source code and scripts
+COPY tsconfig.json ./
+COPY src ./src
+COPY scripts ./scripts
+COPY workers ./workers
+
+ENV NODE_ENV=production
+ENV CHECKPOINT_FILE=/app/.checkpoint/.mangadex-checkpoint.json
+
+# Default command: runs continuous crawler
+CMD ["npx", "tsx", "scripts/crawl-mangadex.ts", "--continuous"]

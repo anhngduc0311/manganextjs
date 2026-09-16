@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { redisRest } from "@/lib/redis";
+import { meiliService } from "@/lib/meilisearch";
 import { storageService } from "@/services/storage.service";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +17,12 @@ export async function GET() {
   const checks: {
     db: HealthCheckResult;
     redis: HealthCheckResult;
+    meilisearch: HealthCheckResult;
     r2: HealthCheckResult;
   } = {
     db: { ok: false, latencyMs: -1 },
     redis: { ok: false, latencyMs: -1 },
+    meilisearch: { ok: false, latencyMs: -1 },
     r2: { ok: false, latencyMs: -1 },
   };
 
@@ -63,7 +66,24 @@ export async function GET() {
     };
   }
 
-  // 3. Storage (R2) Check
+  // 3. Meilisearch Check
+  try {
+    const start = performance.now();
+    const isMeiliOk = await meiliService.health();
+    checks.meilisearch = {
+      ok: isMeiliOk,
+      latencyMs: Math.round(performance.now() - start),
+      error: isMeiliOk ? undefined : "Meilisearch not available",
+    };
+  } catch (err: any) {
+    checks.meilisearch = {
+      ok: false,
+      latencyMs: -1,
+      error: err?.message || "Meilisearch connection error",
+    };
+  }
+
+  // 4. Storage (R2) Check
   try {
     const start = performance.now();
     await storageService.checkHealth();
@@ -79,8 +99,8 @@ export async function GET() {
     };
   }
 
-  const allOk = checks.db.ok && checks.redis.ok && checks.r2.ok;
-  const anyOk = checks.db.ok || checks.redis.ok || checks.r2.ok;
+  const allOk = checks.db.ok && checks.redis.ok;
+  const anyOk = checks.db.ok || checks.redis.ok || checks.meilisearch.ok || checks.r2.ok;
   const status = allOk ? "ok" : anyOk ? "degraded" : "error";
 
   return NextResponse.json(
