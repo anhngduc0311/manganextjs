@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { Search, ArrowUpDown, Eye, Clock } from "lucide-react";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ChapterDTO } from "@/types";
 
 export interface ChapterListProps {
@@ -71,10 +71,9 @@ export function ChapterList({ comicSlug, chapters, lastReadChapterId }: ChapterL
               const chapterSlug = `chuong-${ch.chapterNumber}`;
 
               return (
-                <Link
+                <PrefetchLink
                   key={ch.id}
                   href={`/comics/${comicSlug}/${chapterSlug}`}
-                  prefetch={true}
                   className={`group flex items-center justify-between rounded-xl border p-3 text-xs transition duration-150 active:scale-[0.98] ${
                     isLastRead
                       ? "border-orange-500/50 bg-orange-500/10 text-orange-300"
@@ -104,7 +103,7 @@ export function ChapterList({ comicSlug, chapters, lastReadChapterId }: ChapterL
                       {new Date(ch.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
                     </span>
                   </div>
-                </Link>
+                </PrefetchLink>
               );
             })}
           </div>

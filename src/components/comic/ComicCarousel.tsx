@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen, Star, Eye } from "lucide-react";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
 
 export interface ComicCarouselProps {
@@ -89,20 +89,18 @@ export function ComicCarousel({ comics }: ComicCarouselProps) {
               )}
 
               <div className="pt-2 flex items-center gap-3">
-                <Link
+                <PrefetchLink
                   href={`/comics/${featured.slug}`}
-                  prefetch={true}
                   className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/30 hover:bg-orange-600 hover:scale-105 transition active:scale-95"
                 >
                   <BookOpen className="h-4 w-4" /> Đọc Ngay
-                </Link>
-                <Link
+                </PrefetchLink>
+                <PrefetchLink
                   href={`/comics/${featured.slug}`}
-                  prefetch={true}
                   className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/80 px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white transition active:scale-95"
                 >
                   Xem Chi Tiết
-                </Link>
+                </PrefetchLink>
               </div>
             </div>
           </div>

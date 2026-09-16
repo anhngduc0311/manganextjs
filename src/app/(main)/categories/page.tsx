@@ -1,7 +1,7 @@
 import React from "react";
-import Link from "next/link";
 import { Layers, BookOpen, ArrowRight } from "lucide-react";
 import { comicService } from "@/services/comic.service";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 
 export const metadata = {
   title: "Danh Mục Thể Loại Truyện Tranh — TruyenKomi",
@@ -27,10 +27,10 @@ export default async function CategoriesPage() {
       {/* Category Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {categories.map((cat) => (
-          <Link
+          <PrefetchLink
             key={cat.id}
             href={`/comics?genres=${cat.slug}`}
-            className="group flex flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition duration-300 hover:-translate-y-1 hover:border-orange-500/40 hover:bg-zinc-800/60 hover:shadow-xl hover:shadow-orange-500/5"
+            className="group flex flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition duration-300 hover:-translate-y-1 hover:border-orange-500/40 hover:bg-zinc-800/60 hover:shadow-xl hover:shadow-orange-500/5 active:scale-[0.98]"
           >
             <div>
               <div className="flex items-center justify-between">
@@ -50,7 +50,7 @@ export default async function CategoriesPage() {
               <span>Khám phá ngay</span>
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
             </div>
-          </Link>
+          </PrefetchLink>
         ))}
       </div>
     </div>

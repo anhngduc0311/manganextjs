@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, Compass, Layers, Bookmark, History, Menu, X } from "lucide-react";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 import { SearchAutocomplete } from "./SearchAutocomplete";
 import { ThemeSelector } from "./ThemeSelector";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -40,23 +40,22 @@ export function Navbar({ user, notifications }: NavbarProps) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Left: Brand Logo & Main Nav */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-black tracking-tight text-xl text-zinc-100 group">
+          <PrefetchLink href="/" className="flex items-center gap-2 font-black tracking-tight text-xl text-zinc-100 group active:scale-95 transition-transform">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
               K
             </span>
             <span className="hidden sm:inline-block">
               Truyen<span className="text-orange-500">Komi</span>
             </span>
-          </Link>
+          </PrefetchLink>
 
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
-                <Link
+                <PrefetchLink
                   key={link.href}
                   href={link.href}
-                  prefetch={true}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 active:scale-95 ${
                     isActive
                       ? "bg-orange-500/10 text-orange-400"
@@ -65,7 +64,7 @@ export function Navbar({ user, notifications }: NavbarProps) {
                 >
                   {link.icon}
                   {link.label}
-                </Link>
+                </PrefetchLink>
               );
             })}
           </nav>
@@ -101,11 +100,11 @@ export function Navbar({ user, notifications }: NavbarProps) {
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {navLinks.map((link) => (
-              <Link
+              <PrefetchLink
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition active:scale-95 ${
                   pathname === link.href
                     ? "bg-orange-500/10 text-orange-400"
                     : "text-zinc-300 hover:bg-zinc-900"
@@ -113,7 +112,7 @@ export function Navbar({ user, notifications }: NavbarProps) {
               >
                 {link.icon}
                 {link.label}
-              </Link>
+              </PrefetchLink>
             ))}
           </div>
         </div>

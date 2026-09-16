@@ -1,9 +1,9 @@
 import React from "react";
-import Link from "next/link";
 import { Flame, Clock, Compass, ArrowRight } from "lucide-react";
 import { comicService } from "@/services/comic.service";
 import { ComicCarousel } from "@/components/comic/ComicCarousel";
 import { ComicGrid } from "@/components/comic/ComicGrid";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
 
 export const revalidate = 60; // ISR cache 60s
@@ -21,7 +21,6 @@ export default async function HomePage() {
   } catch (error) {
     console.error("Home feed fetch error:", error);
   }
-
 
   const { hot = [], latest = [] } = feed;
 
@@ -45,13 +44,13 @@ export default async function HomePage() {
               Truyện Hot Đang Thịnh Hành
             </h2>
           </div>
-          <Link
+          <PrefetchLink
             href="/comics?sort=views"
             className="group flex items-center gap-1 text-xs font-bold text-orange-400 hover:text-orange-300 transition"
           >
             <span>Xem tất cả</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </PrefetchLink>
         </div>
 
         <ComicGrid comics={hot} emptyMessage="Chưa có truyện hot nào." />
@@ -68,13 +67,13 @@ export default async function HomePage() {
               Mới Cập Nhật Hôm Nay
             </h2>
           </div>
-          <Link
+          <PrefetchLink
             href="/comics?sort=updatedAt"
             className="group flex items-center gap-1 text-xs font-bold text-orange-400 hover:text-orange-300 transition"
           >
             <span>Xem tất cả</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </PrefetchLink>
         </div>
 
         <ComicGrid comics={latest} emptyMessage="Chưa có truyện mới cập nhật." />
@@ -82,9 +81,9 @@ export default async function HomePage() {
 
       {/* Quick Navigation Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-        <Link
+        <PrefetchLink
           href="/categories"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60"
+          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 active:scale-[0.98]"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400 group-hover:scale-110 transition-transform">
             <Compass className="h-6 w-6" />
@@ -95,11 +94,11 @@ export default async function HomePage() {
             </h3>
             <p className="mt-1 text-xs text-zinc-400">Hành động, Chuyển sinh, Tình cảm, Hài hước...</p>
           </div>
-        </Link>
+        </PrefetchLink>
 
-        <Link
+        <PrefetchLink
           href="/comics?status=COMPLETED"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60"
+          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 active:scale-[0.98]"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 group-hover:scale-110 transition-transform">
             <Clock className="h-6 w-6" />
@@ -110,11 +109,11 @@ export default async function HomePage() {
             </h3>
             <p className="mt-1 text-xs text-zinc-400">Đọc trọn bộ từ đầu đến cuối không cần chờ chương mới</p>
           </div>
-        </Link>
+        </PrefetchLink>
 
-        <Link
+        <PrefetchLink
           href="/offline"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 sm:col-span-2 md:col-span-1"
+          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 sm:col-span-2 md:col-span-1 active:scale-[0.98]"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/15 text-purple-400 group-hover:scale-110 transition-transform">
             <Flame className="h-6 w-6" />
@@ -125,7 +124,7 @@ export default async function HomePage() {
             </h3>
             <p className="mt-1 text-xs text-zinc-400">Tải các chương về máy và đọc mượt mà khi không có mạng</p>
           </div>
-        </Link>
+        </PrefetchLink>
       </section>
     </div>
   );

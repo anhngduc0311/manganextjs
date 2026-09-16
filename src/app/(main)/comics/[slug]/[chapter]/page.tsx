@@ -67,22 +67,10 @@ export default async function ChapterReaderPage({ params }: ReaderPageProps) {
   }
 
   // Fetch all chapters of this comic for the toolbar dropdown & chapter comments in parallel
-  const [allChaptersRows, commentsData] = await Promise.all([
-    prisma.chapter.findMany({
-      where: { comicId: data.comic.id },
-      select: { id: true, chapterNumber: true, title: true, views: true, createdAt: true },
-      orderBy: { chapterNumber: "desc" },
-    }),
+  const [allChapters, commentsData] = await Promise.all([
+    chapterService.listChaptersByComicId(data.comic.id).catch(() => []),
     commentService.list(data.comic.id, data.chapter.id, 1, 30).catch(() => ({ items: [], total: 0 })),
   ]);
-
-  const allChapters = allChaptersRows.map((ch) => ({
-    id: ch.id,
-    chapterNumber: ch.chapterNumber,
-    title: ch.title,
-    views: Number(ch.views),
-    createdAt: ch.createdAt.toISOString(),
-  }));
 
   const pageImageUrls = data.pages.map((p) => p.imageUrl);
 

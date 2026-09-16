@@ -9,7 +9,11 @@ function getPrisma(): PrismaClient {
 
   let client: PrismaClient;
   if (process.env.DATABASE_URL) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    let connectionString = process.env.DATABASE_URL;
+    if (connectionString.includes("sslmode=require") && !connectionString.includes("uselibpqcompat")) {
+      connectionString = connectionString.replace(/([?&])sslmode=require(&|$)/, "$1sslmode=verify-full$2");
+    }
+    const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     client = new PrismaClient({
       adapter,

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 
 export interface PaginationProps {
   currentPage: number;
@@ -28,13 +28,13 @@ export function Pagination({ currentPage, totalPages, buildHref }: PaginationPro
     <nav className="flex items-center justify-center gap-1.5 py-6 select-none" aria-label="Phân trang">
       {/* Nút Trước */}
       {currentPage > 1 ? (
-        <Link
+        <PrefetchLink
           href={buildHref(currentPage - 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition active:scale-95"
           aria-label="Trang trước"
         >
           <ChevronLeft className="h-4 w-4" />
-        </Link>
+        </PrefetchLink>
       ) : (
         <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-600 cursor-not-allowed">
           <ChevronLeft className="h-4 w-4" />
@@ -48,29 +48,29 @@ export function Pagination({ currentPage, totalPages, buildHref }: PaginationPro
             ...
           </span>
         ) : (
-          <Link
+          <PrefetchLink
             key={`page-${p}`}
             href={buildHref(Number(p))}
-            className={`flex h-9 min-w-[36px] px-3 items-center justify-center rounded-lg text-sm font-semibold transition ${
+            className={`flex h-9 min-w-[36px] px-3 items-center justify-center rounded-lg text-sm font-semibold transition active:scale-95 ${
               p === currentPage
                 ? "bg-orange-500 text-white shadow-sm shadow-orange-500/20"
                 : "border border-zinc-700/80 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white"
             }`}
           >
             {p}
-          </Link>
+          </PrefetchLink>
         )
       )}
 
       {/* Nút Kế tiếp */}
       {currentPage < totalPages ? (
-        <Link
+        <PrefetchLink
           href={buildHref(currentPage + 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition active:scale-95"
           aria-label="Trang sau"
         >
           <ChevronRight className="h-4 w-4" />
-        </Link>
+        </PrefetchLink>
       ) : (
         <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-600 cursor-not-allowed">
           <ChevronRight className="h-4 w-4" />

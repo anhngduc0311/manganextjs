@@ -19,7 +19,7 @@ export function NavigationProgress() {
 
   // Intercept all internal link clicks for instant 0ms feedback
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handleTrigger(e: Event) {
       const target = (e.target as HTMLElement).closest("a");
       if (!target) return;
 
@@ -33,17 +33,21 @@ export function NavigationProgress() {
         !target.hasAttribute("download") &&
         target.getAttribute("target") !== "_blank"
       ) {
-        const url = new URL(href, window.location.origin);
-        // If clicking the current exact URL, ignore
-        if (url.pathname === window.location.pathname && url.search === window.location.search) {
+        try {
+          const url = new URL(href, window.location.origin);
+          // If clicking the current exact URL, ignore
+          if (url.pathname === window.location.pathname && url.search === window.location.search) {
+            return;
+          }
+        } catch {
           return;
         }
 
         setLoading(true);
-        setProgress(30);
+        setProgress((prev) => (prev === 0 ? 35 : prev));
 
-        const timer1 = setTimeout(() => setProgress(70), 100);
-        const timer2 = setTimeout(() => setProgress(90), 300);
+        const timer1 = setTimeout(() => setProgress(75), 80);
+        const timer2 = setTimeout(() => setProgress(90), 250);
 
         return () => {
           clearTimeout(timer1);
@@ -52,8 +56,12 @@ export function NavigationProgress() {
       }
     }
 
-    document.addEventListener("click", handleClick, { capture: true });
-    return () => document.removeEventListener("click", handleClick, { capture: true });
+    document.addEventListener("pointerdown", handleTrigger, { capture: true, passive: true });
+    document.addEventListener("click", handleTrigger, { capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", handleTrigger, { capture: true });
+      document.removeEventListener("click", handleTrigger, { capture: true });
+    };
   }, []);
 
   if (!loading && progress === 0) return null;

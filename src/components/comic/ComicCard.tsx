@@ -1,7 +1,7 @@
 import React from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { Eye, Star, BookOpen } from "lucide-react";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
 
 export interface ComicCardProps {
@@ -25,7 +25,7 @@ export function ComicCard({ comic, priority = false }: ComicCardProps) {
   return (
     <div className="group relative flex flex-col rounded-2xl bg-zinc-900/60 border border-zinc-800/80 p-2 transition-all duration-200 hover:-translate-y-1.5 hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/5 active:scale-[0.98]">
       {/* Cover Image */}
-      <Link href={`/comics/${comic.slug}`} prefetch={true} className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-zinc-800">
+      <PrefetchLink href={`/comics/${comic.slug}`} className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-zinc-800">
         <Image
           src={comic.coverImage || "/icons/icon-192.png"}
           alt={comic.title}
@@ -60,19 +60,18 @@ export function ComicCard({ comic, priority = false }: ComicCardProps) {
             {comic.views > 1000 ? `${(comic.views / 1000).toFixed(1)}k` : comic.views}
           </span>
         </div>
-      </Link>
+      </PrefetchLink>
 
       {/* Info Section */}
       <div className="mt-2.5 flex flex-1 flex-col justify-between px-1">
         <div>
-          <Link
+          <PrefetchLink
             href={`/comics/${comic.slug}`}
-            prefetch={true}
             className="line-clamp-2 text-sm font-bold text-zinc-100 transition-colors group-hover:text-orange-400 leading-snug"
             title={comic.title}
           >
             {comic.title}
-          </Link>
+          </PrefetchLink>
 
           {comic.categories && comic.categories.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">

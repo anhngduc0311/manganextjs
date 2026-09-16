@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { hash as argonHash, verify as argonVerify } from "@node-rs/argon2";
 import { randomBytes, randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -37,9 +38,9 @@ export const authService = {
     return argonVerify(passwordHash, password);
   },
 
-  async findById(id: string): Promise<SafeUser | null> {
+  findById: cache(async (id: string): Promise<SafeUser | null> => {
     return prisma.user.findUnique({ where: { id }, select: safeUserSelect });
-  },
+  }),
 
   async register(username: string, email: string, password: string): Promise<SafeUser | null> {
     const exists = await prisma.user.findFirst({

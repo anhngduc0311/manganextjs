@@ -2,8 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
-import { BookOpen, Star, Eye, User, Clock, Bookmark, Play } from "lucide-react";
+import { BookOpen, Eye, User, Play } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { comicService } from "@/services/comic.service";
@@ -11,8 +10,8 @@ import { commentService } from "@/services/comment.service";
 import { ChapterList } from "@/components/comic/ChapterList";
 import { FollowButton } from "@/components/comic/FollowButton";
 import { InteractiveRating } from "@/components/comic/InteractiveRating";
-import { RatingStar } from "@/components/ui/RatingStar";
 import { CommentList } from "@/components/comment/CommentList";
+import { PrefetchLink } from "@/components/common/PrefetchLink";
 
 interface ComicDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -153,13 +152,13 @@ export default async function ComicDetailPage({ params }: ComicDetailPageProps) 
             {comic.categories && comic.categories.length > 0 && (
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5">
                 {comic.categories.map((c) => (
-                  <Link
+                  <PrefetchLink
                     key={c.slug}
                     href={`/comics?genres=${c.slug}`}
-                    className="rounded-lg bg-zinc-800/90 hover:bg-orange-500/20 hover:text-orange-300 border border-zinc-700/60 px-2.5 py-1 text-xs font-semibold text-zinc-300 transition"
+                    className="rounded-lg bg-zinc-800/90 hover:bg-orange-500/20 hover:text-orange-300 border border-zinc-700/60 px-2.5 py-1 text-xs font-semibold text-zinc-300 transition active:scale-95"
                   >
                     {c.name}
-                  </Link>
+                  </PrefetchLink>
                 ))}
               </div>
             )}
@@ -167,31 +166,28 @@ export default async function ComicDetailPage({ params }: ComicDetailPageProps) 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
               {lastReadChapterNumber !== null ? (
-                <Link
+                <PrefetchLink
                   href={`/comics/${comic.slug}/chuong-${lastReadChapterNumber}`}
-                  prefetch={true}
                   className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition active:scale-95"
                 >
                   <Play className="h-4 w-4 fill-white" /> Đọc tiếp (Ch. {lastReadChapterNumber})
-                </Link>
+                </PrefetchLink>
               ) : firstChapter ? (
-                <Link
+                <PrefetchLink
                   href={`/comics/${comic.slug}/chuong-${firstChapter.chapterNumber}`}
-                  prefetch={true}
                   className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition active:scale-95"
                 >
                   <Play className="h-4 w-4 fill-white" /> Đọc từ đầu (Ch. {firstChapter.chapterNumber})
-                </Link>
+                </PrefetchLink>
               ) : null}
 
               {latestChapter && (
-                <Link
+                <PrefetchLink
                   href={`/comics/${comic.slug}/chuong-${latestChapter.chapterNumber}`}
-                  prefetch={true}
                   className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/90 px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white transition active:scale-95"
                 >
                   Đọc mới nhất (Ch. {latestChapter.chapterNumber})
-                </Link>
+                </PrefetchLink>
               )}
 
               <FollowButton

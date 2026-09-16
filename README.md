@@ -29,8 +29,8 @@ Tạo tệp `.env` tại thư mục gốc với các thông số:
 
 ```env
 # Neon PostgreSQL
-DATABASE_URL="postgresql://neondb_owner:password@ep-delicate-pooler.aws.neon.tech/neondb?sslmode=require"
-DIRECT_URL="postgresql://neondb_owner:password@ep-delicate.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://neondb_owner:password@ep-delicate-pooler.aws.neon.tech/neondb?sslmode=verify-full"
+DIRECT_URL="postgresql://neondb_owner:password@ep-delicate.aws.neon.tech/neondb?sslmode=verify-full"
 
 # NextAuth Secret & App URL
 AUTH_SECRET="your-32-character-secret-key-here"
