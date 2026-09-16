@@ -176,8 +176,18 @@ wait_for_db() {
     log_success "PostgreSQL đã sẵn sàng."
 }
 
+# --- Ensure Postgres Service is Running ---
+ensure_postgres_running() {
+    if ! $DOCKER_COMPOSE ps postgres 2>/dev/null | grep -qE "Up|running"; then
+        log_info "Container PostgreSQL chưa chạy. Đang tự động khởi động..."
+        $DOCKER_COMPOSE up -d postgres
+        wait_for_db
+    fi
+}
+
 # --- Run Database Migrations ---
 run_migrations() {
+    ensure_postgres_running
     log_info "Đang chạy Prisma database migrations..."
     
     # Run migrations using the web service container
@@ -191,6 +201,7 @@ run_migrations() {
 
 # --- Seed Database ---
 seed_database() {
+    ensure_postgres_running
     log_info "Đang nạp dữ liệu mẫu và tạo tài khoản Admin mặc định (Prisma Seed)..."
     if $DOCKER_COMPOSE run --rm --no-deps web npm run db:seed; then
         log_success "Nạp dữ liệu mẫu thành công!"
@@ -243,6 +254,7 @@ run_r2_backup_script() {
 # --- Backup Database (Local + Cloudflare R2) ---
 backup_database() {
     log_header "Sao lưu Cơ Sở Dữ Liệu PostgreSQL"
+    ensure_postgres_running
     mkdir -p "$BACKUP_DIR"
     local timestamp
     timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -292,6 +304,7 @@ restore_database() {
     fi
 
     log_header "Khôi phục Cơ Sở Dữ Liệu"
+    ensure_postgres_running
     log_warning "Thao tác này sẽ ghi đè toàn bộ dữ liệu hiện tại trong truyenkomi_db. Bạn có chắc chắn không? (y/N)"
     read -r confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
