@@ -1,7 +1,7 @@
 import React from "react";
-import { Flame, Clock, Compass, ArrowRight } from "lucide-react";
+import { Zap, ArrowRight, Sparkles } from "lucide-react";
 import { comicService } from "@/services/comic.service";
-import { ComicCarousel } from "@/components/comic/ComicCarousel";
+import { HotComicsSlider } from "@/components/comic/HotComicsSlider";
 import { ComicGrid } from "@/components/comic/ComicGrid";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
@@ -9,123 +9,97 @@ import type { ComicCardDTO } from "@/types";
 export const revalidate = 60; // ISR cache 60s
 
 export const metadata = {
-  title: "TruyenKomi — Nền Tảng Đọc Truyện Tranh Online Hàng Đầu",
-  description: "Trang chủ TruyenKomi - Cập nhật hàng ngàn bộ truyện tranh Manga, Manhwa, Manhua hot nhất mỗi ngày với tốc độ tải siêu tốc.",
+  title: "TruyenKomi — Đọc Truyện Tranh Manhwa, Manga, Manhua Online Hay Nhất",
+  description:
+    "Đọc truyện tranh Manhwa, Manga, Manhua online chất lượng cao, cập nhật chương mới nhất liên tục mỗi ngày tại TruyenKomi với tốc độ tải siêu tốc.",
 };
 
 export default async function HomePage() {
-  let feed: { hot: ComicCardDTO[]; latest: ComicCardDTO[] } = { hot: [], latest: [] };
-
-  try {
-    feed = await comicService.getHomeFeed();
-  } catch (error) {
-    console.error("Home feed fetch error:", error);
-  }
+  const feed = await comicService.getHomeFeed().catch(() => ({
+    hot: [] as ComicCardDTO[],
+    latest: [] as ComicCardDTO[],
+  }));
 
   const { hot = [], latest = [] } = feed;
 
   return (
-    <div className="space-y-12">
-      {/* Hero Banner Carousel */}
+    <div className="space-y-8">
+      {/* 📢 Pinned Notice Banner */}
+      <div className="flex items-center gap-3 rounded-2xl border border-orange-500/20 bg-[#17171d] p-3.5 sm:px-4 text-xs sm:text-sm text-zinc-300 shadow-lg">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-500/20 text-orange-400">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <p className="flex-1 leading-snug">
+          <strong className="text-orange-400 font-bold">Chào mừng đến với TruyenKomi:</strong> Đọc
+          truyện tranh Manhwa, Manga, Manhua hoàn toàn miễn phí, cập nhật nhanh chóng với chất lượng hình ảnh sắc nét.
+        </p>
+      </div>
+
+      {/* 🔥 TRUYỆN HOT ĐỀ CỬ (Horizontal Slider) */}
       {hot.length > 0 && (
         <section>
-          <ComicCarousel comics={hot.slice(0, 5)} />
+          <HotComicsSlider comics={hot} />
         </section>
       )}
 
-      {/* Hot Comics Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+      {/* Main Section: Truyện Mới Cập Nhật (Full Width) */}
+      <section className="space-y-6">
+        {/* Header & Quick Genre Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/15 text-orange-500">
-              <Flame className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/20 text-sky-400">
+              <Zap className="h-4 w-4 fill-sky-400/30" />
             </div>
-            <h2 className="text-lg font-black tracking-tight text-zinc-100 sm:text-xl">
-              Truyện Hot Đang Thịnh Hành
+            <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-zinc-100">
+              Truyện Mới Cập Nhật
             </h2>
           </div>
-          <PrefetchLink
-            href="/comics?sort=views"
-            className="group flex items-center gap-1 text-xs font-bold text-orange-400 hover:text-orange-300 transition"
-          >
-            <span>Xem tất cả</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </PrefetchLink>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <PrefetchLink
+              href="/comics?sort=updatedAt"
+              className="rounded-lg bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-sm"
+            >
+              Tất cả
+            </PrefetchLink>
+            <PrefetchLink
+              href="/comics?genres=manhwa"
+              className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-orange-400 transition"
+            >
+              Manhwa
+            </PrefetchLink>
+            <PrefetchLink
+              href="/comics?genres=manga"
+              className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-orange-400 transition"
+            >
+              Manga
+            </PrefetchLink>
+            <PrefetchLink
+              href="/comics?genres=manhua"
+              className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-orange-400 transition"
+            >
+              Manhua
+            </PrefetchLink>
+          </div>
         </div>
 
-        <ComicGrid comics={hot} emptyMessage="Chưa có truyện hot nào." />
-      </section>
+        {/* Comic Grid (Full Width 2 to 6 columns) */}
+        <ComicGrid comics={latest} emptyMessage="Chưa có truyện mới cập nhật." />
 
-      {/* Latest Updates Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400">
-              <Clock className="h-4 w-4" />
-            </div>
-            <h2 className="text-lg font-black tracking-tight text-zinc-100 sm:text-xl">
-              Mới Cập Nhật Hôm Nay
-            </h2>
-          </div>
+        {/* Xem Thêm Button */}
+        <div className="text-center pt-2">
           <PrefetchLink
             href="/comics?sort=updatedAt"
-            className="group flex items-center gap-1 text-xs font-bold text-orange-400 hover:text-orange-300 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 border border-zinc-800 px-8 py-3 text-sm font-bold text-zinc-200 hover:border-orange-500/50 hover:bg-zinc-800/80 hover:text-orange-400 transition shadow-lg active:scale-[0.98]"
           >
-            <span>Xem tất cả</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            <span>Xem Thêm Nhiều Truyện Mới Cập Nhật</span>
+            <ArrowRight className="h-4 w-4" />
           </PrefetchLink>
         </div>
-
-        <ComicGrid comics={latest} emptyMessage="Chưa có truyện mới cập nhật." />
-      </section>
-
-      {/* Quick Navigation Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-        <PrefetchLink
-          href="/categories"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 active:scale-[0.98]"
-        >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400 group-hover:scale-110 transition-transform">
-            <Compass className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-zinc-100 group-hover:text-orange-400 transition">
-              Khám Phá Theo Thể Loại
-            </h3>
-            <p className="mt-1 text-xs text-zinc-400">Hành động, Chuyển sinh, Tình cảm, Hài hước...</p>
-          </div>
-        </PrefetchLink>
-
-        <PrefetchLink
-          href="/comics?status=COMPLETED"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 active:scale-[0.98]"
-        >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 group-hover:scale-110 transition-transform">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition">
-              Truyện Đã Hoàn Thành
-            </h3>
-            <p className="mt-1 text-xs text-zinc-400">Đọc trọn bộ từ đầu đến cuối không cần chờ chương mới</p>
-          </div>
-        </PrefetchLink>
-
-        <PrefetchLink
-          href="/offline"
-          className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-orange-500/40 hover:bg-zinc-800/60 sm:col-span-2 md:col-span-1 active:scale-[0.98]"
-        >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/15 text-purple-400 group-hover:scale-110 transition-transform">
-            <Flame className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-zinc-100 group-hover:text-purple-400 transition">
-              Tủ Truyện Offline PWA
-            </h3>
-            <p className="mt-1 text-xs text-zinc-400">Tải các chương về máy và đọc mượt mà khi không có mạng</p>
-          </div>
-        </PrefetchLink>
       </section>
     </div>
   );
 }
+
+
+

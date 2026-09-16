@@ -32,6 +32,7 @@ export interface ComicCardDTO {
   ratingAvg: number;
   ratingCount: number;
   chapterCount: number;
+  latestChapterNumber?: number | null;
   updatedAt: string;
   categories: Pick<CategoryDTO, "name" | "slug">[];
 }
