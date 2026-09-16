@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import { BookOpen, Eye, User, Play, ChevronRight, Home, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -109,7 +109,7 @@ export default async function ComicDetailPage({ params }: ComicDetailPageProps) 
       <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-[#16161b] shadow-2xl p-5 sm:p-7 md:p-8">
         {/* Ambient Blur Backdrop */}
         <div className="absolute inset-0 overflow-hidden opacity-20 blur-3xl pointer-events-none">
-          <Image
+          <SafeImage
             src={comic.coverImage || "/icons/icon-192.png"}
             alt={comic.title}
             fill
@@ -123,7 +123,7 @@ export default async function ComicDetailPage({ params }: ComicDetailPageProps) 
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
           {/* Cover Poster */}
           <div className="relative aspect-[3/4] w-48 sm:w-56 shrink-0 overflow-hidden rounded-2xl bg-zinc-800 shadow-2xl ring-1 ring-white/10">
-            <Image
+            <SafeImage
               src={comic.coverImage || "/icons/icon-192.png"}
               alt={comic.title}
               fill

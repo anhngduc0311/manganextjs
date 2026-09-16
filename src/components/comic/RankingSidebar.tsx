@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import { Trophy, Eye, Tags, ChevronRight } from "lucide-react";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO, CategoryDTO, RankingPeriod } from "@/types";
@@ -102,7 +102,7 @@ export function RankingSidebar({ initialRankings, categories = [] }: RankingSide
                   href={`/comics/${comic.slug}`}
                   className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-zinc-800"
                 >
-                  <Image
+                  <SafeImage
                     src={comic.coverImage || "/icons/icon-192.png"}
                     alt={comic.title}
                     fill

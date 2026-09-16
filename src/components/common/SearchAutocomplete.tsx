@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import Link from "next/link";
 import { Search, Loader2, X, BookOpen, Eye } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -124,7 +124,7 @@ export function SearchAutocomplete() {
                   className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-800/80"
                 >
                   <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md bg-zinc-800">
-                    <Image
+                    <SafeImage
                       src={comic.coverImage || "/icons/icon-192.png"}
                       alt={comic.title}
                       fill

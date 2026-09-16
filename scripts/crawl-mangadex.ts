@@ -80,8 +80,9 @@ const getArg = (name: string, fallback = ""): string => {
 const hasFlag = (name: string): boolean => args.includes(`--${name}`);
 
 const isContinuous = hasFlag("continuous") || process.env.CRAWLER_CONTINUOUS === "true";
-const intervalMinutes = parseInt(getArg("interval", process.env.CRAWLER_INTERVAL_MINUTES || "10"), 10);
+const intervalMinutes = parseInt(getArg("interval", process.env.CRAWLER_INTERVAL_MINUTES || "0"), 10);
 const modeArg = getArg("mode", process.env.CRAWLER_MODE || (isContinuous ? "hybrid" : "backlog")) as "updates" | "backlog" | "hybrid";
+
 const updatesLimitArg = parseInt(getArg("updates-limit", process.env.CRAWLER_UPDATES_LIMIT || "20"), 10);
 const isAll = hasFlag("all") || process.env.CRAWLER_ALL === "true";
 const isResume = hasFlag("resume") || process.env.CRAWLER_RESUME === "true" || isContinuous;
@@ -101,8 +102,8 @@ async function getOrCreateCategories(tags: string[]): Promise<string[]> {
 
   for (const rawTag of tags) {
     if (!rawTag || !rawTag.trim()) continue;
-    const vietnameseName = translateMangaDexGenre(rawTag);
-    const slug = toSlug(vietnameseName);
+    const englishName = translateMangaDexGenre(rawTag);
+    const slug = toSlug(englishName);
     if (!slug || seenSlugs.has(slug)) continue;
     seenSlugs.add(slug);
 
@@ -110,19 +111,20 @@ async function getOrCreateCategories(tags: string[]): Promise<string[]> {
       const category = await prisma.category.upsert({
         where: { slug },
         create: {
-          name: vietnameseName,
+          name: englishName,
           slug,
-          description: `Thể loại truyện tranh ${vietnameseName}`,
+          description: `Thể loại truyện tranh ${englishName}`,
         },
         update: {
-          name: vietnameseName,
+          name: englishName,
         },
         select: { id: true },
       });
       categoryIds.push(category.id);
     } catch (err) {
-      console.warn(`[Category] Failed to upsert category "${vietnameseName}":`, err);
+      console.warn(`[Category] Failed to upsert category "${englishName}":`, err);
     }
+
   }
 
   return categoryIds;
@@ -641,7 +643,7 @@ async function main() {
     return;
   }
 
-  console.log(`\n🔄 Kích hoạt chế độ CRAWLER DAEMON trong Docker (Mode: ${modeArg.toUpperCase()}, Tần suất: mỗi ${intervalMinutes} phút)...\n`);
+  console.log(`\n🔄 Kích hoạt chế độ CRAWLER DAEMON trong Docker (Mode: ${modeArg.toUpperCase()}${intervalMinutes > 0 ? `, Tần suất nghỉ: ${intervalMinutes} phút` : ", Chạy liên tục không nghỉ"})...\n`);
   let cycle = 1;
 
   const runLoop = async () => {
@@ -664,11 +666,19 @@ async function main() {
       } catch (err) {
         console.error(`❌ Lỗi chu kỳ crawl #${cycle}:`, err);
       }
-      console.log(`💤 Hoàn thành chu kỳ #${cycle}. Nghỉ ${intervalMinutes} phút trước đợt tiếp theo...`);
-      cycle++;
-      await sleep(intervalMinutes * 60 * 1000);
+      
+      if (intervalMinutes > 0) {
+        console.log(`💤 Hoàn thành chu kỳ #${cycle}. Nghỉ ${intervalMinutes} phút trước đợt tiếp theo...`);
+        cycle++;
+        await sleep(intervalMinutes * 60 * 1000);
+      } else {
+        console.log(`⚡ Hoàn thành chu kỳ #${cycle}. Tiếp tục chu kỳ tiếp theo ngay lập tức (nghỉ 3 giây)...`);
+        cycle++;
+        await sleep(3000);
+      }
     }
   };
+
 
   const handleShutdown = async () => {
     console.log("\n🛑 Đang dừng Crawler Container gracefully...");

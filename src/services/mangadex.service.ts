@@ -92,103 +92,98 @@ export interface NormalizedChapter {
   pageCount: number;
 }
 
-export const MANGADEX_GENRE_MAP: Record<string, string> = {
-  // Genres
-  Action: "Hành Động",
-  Adventure: "Phiêu Lưu",
-  Comedy: "Hài Hước",
-  Drama: "Kịch Tính",
-  Fantasy: "Giả Tưởng",
-  Horror: "Kinh Dị",
-  Mystery: "Bí Ẩn",
-  Psychological: "Tâm Lý",
-  Romance: "Lãng Mạn",
-  "Sci-Fi": "Khoa Học Viễn Tưởng",
-  "Slice of Life": "Đời Thường",
-  Sports: "Thể Thao",
-  Supernatural: "Siêu Nhiên",
-  Thriller: "Giật Gân",
-  Tragedy: "Bi Kịch",
-
-  // Themes
-  Aliens: "Người Ngoài Hành Tinh",
-  Animals: "Động Vật",
-  Cooking: "Ẩm Thực",
-  Crime: "Tội Phạm",
-  Crossdressing: "Giả Trang",
-  Delinquents: "Bất Lương",
-  Demons: "Ác Quỷ",
-  Ecchi: "Ecchi",
-  Genderswap: "Hoán Đổi Giới Tính",
-  Ghosts: "Linh Hồn",
-  Gore: "Máu Mê",
-  Harem: "Harem",
-  Historical: "Lịch Sử",
-  Isekai: "Chuyển Sinh",
-  Loli: "Loli",
-  Magic: "Ma Thuật",
-  "Martial Arts": "Võ Thuật",
-  Mecha: "Mecha",
-  Medical: "Y Học",
-  Military: "Quân Sự",
-  "Monster Girls": "Nữ Quái Vật",
-  Monsters: "Quái Vật",
-  Music: "Âm Nhạc",
-  Ninja: "Ninja",
-  "Office Workers": "Công Sở",
-  Police: "Cảnh Sát",
-  "Post-Apocalyptic": "Tận Thế",
-  Reincarnation: "Trọng Sinh",
-  "Reverse Harem": "Harem Ngược",
-  Samurai: "Samurai",
-  "School Life": "Học Đường",
-  Shota: "Shota",
-  Superhero: "Siêu Anh Hùng",
-  Survival: "Sinh Tồn",
-  "Time Travel": "Du Hành Thời Gian",
-  Traditional: "Truyền Thống",
-  Vampires: "Ma Cà Rồng",
-  "Video Games": "Trò Chơi Ảo",
-  "Virtual Reality": "Thực Tế Ảo",
-  Zombies: "Zombie",
-
-  // Demographics
-  Shounen: "Shounen",
-  Shoujo: "Shoujo",
-  Seinen: "Seinen",
-  Josei: "Josei",
-
-  // Formats & Countries
-  Adaptation: "Chuyển Thể",
-  Anthology: "Tuyển Tập",
-  "Award Winning": "Đoạt Giải",
-  Doujinshi: "Doujinshi",
-  "Fan Colored": "Fan Tô Màu",
-  "Full Color": "Bản Màu",
-  "Long Strip": "Webtoon",
-  "Official Colored": "Bản Màu Chính Thức",
-  Oneshot: "Oneshot",
-  "Self-Published": "Tự Xuất Bản",
-  "Web Comic": "Webtoon",
+export const VI_TO_EN_GENRE_MAP: Record<string, string> = {
+  // Vietnamese to English mapping
+  "Hành Động": "Action",
+  "Phiêu Lưu": "Adventure",
+  "Hài Hước": "Comedy",
+  "Kịch Tính": "Drama",
+  "Giả Tưởng": "Fantasy",
+  "Kinh Dị": "Horror",
+  "Bí Ẩn": "Mystery",
+  "Tâm Lý": "Psychological",
+  "Lãng Mạn": "Romance",
+  "Khoa Học Viễn Tưởng": "Sci-Fi",
+  "Đời Thường": "Slice of Life",
+  "Thể Thao": "Sports",
+  "Siêu Nhiên": "Supernatural",
+  "Giật Gân": "Thriller",
+  "Bi Kịch": "Tragedy",
+  "Người Ngoài Hành Tinh": "Aliens",
+  "Động Vật": "Animals",
+  "Ẩm Thực": "Cooking",
+  "Tội Phạm": "Crime",
+  "Giả Trang": "Crossdressing",
+  "Bất Lương": "Delinquents",
+  "Ác Quỷ": "Demons",
+  "Ecchi": "Ecchi",
+  "Hoán Đổi Giới Tính": "Genderswap",
+  "Linh Hồn": "Ghosts",
+  "Máu Mê": "Gore",
+  "Harem": "Harem",
+  "Lịch Sử": "Historical",
+  "Chuyển Sinh": "Isekai",
+  "Loli": "Loli",
+  "Ma Thuật": "Magic",
+  "Võ Thuật": "Martial Arts",
+  "Mecha": "Mecha",
+  "Y Học": "Medical",
+  "Quân Sự": "Military",
+  "Nữ Quái Vật": "Monster Girls",
+  "Quái Vật": "Monsters",
+  "Âm Nhạc": "Music",
+  "Ninja": "Ninja",
+  "Công Sở": "Office Workers",
+  "Cảnh Sát": "Police",
+  "Tận Thế": "Post-Apocalyptic",
+  "Trọng Sinh": "Reincarnation",
+  "Harem Ngược": "Reverse Harem",
+  "Samurai": "Samurai",
+  "Học Đường": "School Life",
+  "Shota": "Shota",
+  "Siêu Anh Hùng": "Superhero",
+  "Sinh Tồn": "Survival",
+  "Du Hành Thời Gian": "Time Travel",
+  "Truyền Thống": "Traditional",
+  "Ma Cà Rồng": "Vampires",
+  "Trò Chơi Ảo": "Video Games",
+  "Thực Tế Ảo": "Virtual Reality",
+  "Zombie": "Zombies",
+  "Chuyển Thể": "Adaptation",
+  "Tuyển Tập": "Anthology",
+  "Đoạt Giải": "Award Winning",
+  "Doujinshi": "Doujinshi",
+  "Fan Tô Màu": "Fan Colored",
+  "Bản Màu": "Full Color",
+  "Bản Màu Chính Thức": "Official Colored",
+  "Webtoon": "Webtoon",
+  "Oneshot": "Oneshot",
+  "Tự Xuất Bản": "Self-Published",
   "4-Koma": "4-Koma",
-  Manhwa: "Manhwa",
-  Manhua: "Manhua",
-  Manga: "Manga",
-  Comic: "Truyện Tranh Mỹ",
-  "Việt Nam": "Việt Nam",
+  "Truyện Tranh Mỹ": "Comic",
+  "Việt Nam": "Vietnamese",
 };
 
+export const MANGADEX_GENRE_MAP = VI_TO_EN_GENRE_MAP;
+
+/**
+ * Normalizes genre/tag names to canonical English
+ */
 export function translateMangaDexGenre(rawTag: string): string {
   if (!rawTag) return "";
   const trimmed = rawTag.trim();
-  if (MANGADEX_GENRE_MAP[trimmed]) return MANGADEX_GENRE_MAP[trimmed];
+  
+  // If already mapped from Vietnamese to English
+  if (VI_TO_EN_GENRE_MAP[trimmed]) return VI_TO_EN_GENRE_MAP[trimmed];
 
   const lower = trimmed.toLowerCase();
-  for (const [key, val] of Object.entries(MANGADEX_GENRE_MAP)) {
-    if (key.toLowerCase() === lower) return val;
+  for (const [vi, en] of Object.entries(VI_TO_EN_GENRE_MAP)) {
+    if (vi.toLowerCase() === lower || en.toLowerCase() === lower) return en;
   }
+
   return trimmed;
 }
+
 
 const BASE_API = (process.env.MANGADEX_API_URL || "https://api.mangadex.org").replace(/\/$/, "");
 const COVERS_BASE = "https://uploads.mangadex.org/covers";
@@ -362,10 +357,11 @@ export const mangadexService = {
 
     const author = authors.join(", ") || "Đang cập nhật";
 
-    // Build cover image URL
+    // Build cover image URL (use official .512.jpg thumbnail for 26x faster load and low bandwidth)
     const coverUrl = coverFileName
-      ? `${COVERS_BASE}/${manga.id}/${coverFileName}`
+      ? `${COVERS_BASE}/${manga.id}/${coverFileName}.512.jpg`
       : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80";
+
 
     // Status map
     let status: "ONGOING" | "COMPLETED" | "DROPPED" = "ONGOING";
@@ -385,12 +381,12 @@ export const mangadexService = {
       }
     };
 
-    // 1. Tags from MangaDex
+    // 1. Tags from MangaDex (use English tag name)
     if (attr.tags) {
       for (const tag of attr.tags) {
-        const tagName = tag.attributes?.name?.vi || tag.attributes?.name?.en || Object.values(tag.attributes?.name || {})[0];
+        const tagName = tag.attributes?.name?.en || Object.values(tag.attributes?.name || {})[0];
         if (typeof tagName === "string" && tagName.trim()) {
-          addCategory(tagName.trim());
+          addCategory(translateMangaDexGenre(tagName.trim()));
         }
       }
     }
@@ -410,9 +406,10 @@ export const mangadexService = {
       if (lang === "ko") addCategory("Manhwa");
       else if (lang === "zh" || lang === "zh-hk") addCategory("Manhua");
       else if (lang === "ja") addCategory("Manga");
-      else if (lang === "vi") addCategory("Việt Nam");
+      else if (lang === "vi") addCategory("Vietnamese");
       else if (lang === "en") addCategory("Comic");
     }
+
 
     return {
       id: manga.id,

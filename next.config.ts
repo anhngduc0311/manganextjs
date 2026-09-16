@@ -30,6 +30,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.mangadex.network" },
       { protocol: "https", hostname: "mangadex.network" },
       { protocol: "http", hostname: "**.mangadex.network" },
+      { protocol: "https", hostname: "mangadex.akzan0311.workers.dev" },
+      { protocol: "https", hostname: "**.workers.dev" },
     ],
   },
   async headers() {

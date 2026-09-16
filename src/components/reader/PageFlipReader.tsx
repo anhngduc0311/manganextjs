@@ -60,6 +60,8 @@ export function PageFlipReader({ pages, onNextChapter, onPrevChapter }: PageFlip
             priority
             sizes="(max-width: 768px) 100vw, 800px"
             className="object-contain select-none"
+            unoptimized
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-500">Trang {safePage}</div>

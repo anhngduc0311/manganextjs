@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import { BookOpen, Layers, Users, MessageSquare, AlertTriangle, Eye, TrendingUp, ArrowRight, CheckCircle, Flame } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatsCard } from "@/components/admin/StatsCard";
@@ -128,7 +128,7 @@ export default async function AdminDashboardPage() {
                       {idx + 1}
                     </span>
                     <div className="relative aspect-[3/4] w-10 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
-                      <Image
+                      <SafeImage
                         src={comic.coverImage || "/icons/icon-192.png"}
                         alt={comic.title}
                         fill

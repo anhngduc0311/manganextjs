@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import { ChevronLeft, ChevronRight, BookOpen, Star, Eye } from "lucide-react";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
@@ -30,7 +30,7 @@ export function ComicCarousel({ comics }: ComicCarouselProps) {
     <div className="relative w-full overflow-hidden rounded-3xl border border-zinc-800/80 bg-zinc-900 shadow-2xl">
       {/* Background Banner with Glass Gradient */}
       <div className="relative h-[320px] sm:h-[380px] md:h-[440px] w-full overflow-hidden">
-        <Image
+        <SafeImage
           src={featured.coverImage || "/icons/icon-192.png"}
           alt={featured.title}
           fill
@@ -48,7 +48,7 @@ export function ComicCarousel({ comics }: ComicCarouselProps) {
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full max-w-5xl">
             {/* Left Poster */}
             <div className="relative hidden md:block h-64 w-48 shrink-0 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-              <Image
+              <SafeImage
                 src={featured.coverImage || "/icons/icon-192.png"}
                 alt={featured.title}
                 fill

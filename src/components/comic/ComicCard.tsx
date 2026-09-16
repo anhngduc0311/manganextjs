@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import { Eye, Star, Flame } from "lucide-react";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import { formatTimeAgoVi } from "@/lib/format-time";
@@ -25,7 +25,7 @@ export function ComicCard({ comic, priority = false, showHotBadge }: ComicCardPr
         href={`/comics/${comic.slug}`}
         className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-zinc-800 block shadow-inner"
       >
-        <Image
+        <SafeImage
           src={comic.coverImage || "/icons/icon-192.png"}
           alt={comic.title}
           fill

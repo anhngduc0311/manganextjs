@@ -78,15 +78,19 @@ describe("Phase 8 - Ingestion Pipeline & Image Processor", () => {
 });
 
 describe("MangaDex Dynamic Category Translation & Extraction", () => {
-  it("translates known MangaDex tags into Vietnamese and handles unmapped tags gracefully", async () => {
+  it("normalizes known MangaDex tags into English and handles unmapped tags gracefully", async () => {
     const { translateMangaDexGenre } = await import("@/services/mangadex.service");
-    expect(translateMangaDexGenre("Action")).toBe("Hành Động");
-    expect(translateMangaDexGenre("isekai")).toBe("Chuyển Sinh");
-    expect(translateMangaDexGenre("Martial Arts")).toBe("Võ Thuật");
-    expect(translateMangaDexGenre("Slice of Life")).toBe("Đời Thường");
+    expect(translateMangaDexGenre("Action")).toBe("Action");
+    expect(translateMangaDexGenre("Hành Động")).toBe("Action");
+    expect(translateMangaDexGenre("Chuyển Sinh")).toBe("Isekai");
+    expect(translateMangaDexGenre("isekai")).toBe("Isekai");
+    expect(translateMangaDexGenre("Martial Arts")).toBe("Martial Arts");
+    expect(translateMangaDexGenre("Đời Thường")).toBe("Slice of Life");
+    expect(translateMangaDexGenre("Slice of Life")).toBe("Slice of Life");
     expect(translateMangaDexGenre("Shounen")).toBe("Shounen");
     expect(translateMangaDexGenre("Custom New Genre")).toBe("Custom New Genre");
   });
+
 
   it("normalizeManga automatically includes tags, demographics, and format/country", async () => {
     const { mangadexService } = await import("@/services/mangadex.service");

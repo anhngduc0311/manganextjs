@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import Image from "next/image";
+import { SafeImage } from "@/components/common/SafeImage";
 import Link from "next/link";
 import {
   Search,
@@ -371,7 +371,7 @@ export function ComicsTable({ initialComics, categories }: ComicsTableProps) {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="relative aspect-[3/4] w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800 shadow-md">
-                          <Image
+                          <SafeImage
                             src={comic.coverImage || "/icons/icon-192.png"}
                             alt={comic.title}
                             fill

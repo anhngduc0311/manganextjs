@@ -66,21 +66,22 @@ export async function POST(req: NextRequest) {
 
       for (const rawTag of manga.categories) {
         if (!rawTag || !rawTag.trim()) continue;
-        const vietnameseName = translateMangaDexGenre(rawTag);
-        const slug = toSlug(vietnameseName);
+        const englishName = translateMangaDexGenre(rawTag);
+        const slug = toSlug(englishName);
         if (!slug || seenSlugs.has(slug)) continue;
         seenSlugs.add(slug);
 
         try {
           const category = await prisma.category.upsert({
             where: { slug },
-            create: { name: vietnameseName, slug, description: `Thể loại truyện tranh ${vietnameseName}` },
-            update: { name: vietnameseName },
+            create: { name: englishName, slug, description: `Thể loại truyện tranh ${englishName}` },
+            update: { name: englishName },
             select: { id: true },
           });
           categoryIds.push(category.id);
         } catch {}
       }
+
 
       // Find or create Comic
       let comicSlug = toSlug(manga.title);

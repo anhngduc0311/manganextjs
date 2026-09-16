@@ -43,9 +43,12 @@ export function WebtoonReader({ pages }: WebtoonReaderProps) {
             sizes="(max-width: 768px) 100vw, 1100px"
             className="h-auto w-full object-contain select-none pointer-events-none"
             loading={index < 3 ? undefined : "lazy"}
+            unoptimized
+            referrerPolicy="no-referrer"
           />
         </div>
       ))}
     </div>
   );
 }
+
