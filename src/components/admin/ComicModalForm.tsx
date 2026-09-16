@@ -182,7 +182,7 @@ export function ComicModalForm({
           </label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as any)}
+            onChange={(e) => setStatus(e.target.value as ComicFormData["status"])}
             className="w-full rounded-xl border border-zinc-700/80 bg-zinc-800/80 px-3 py-2.5 text-xs font-semibold text-zinc-100 outline-none focus:border-orange-500"
           >
             <option value="ONGOING">Đang tiến hành (ONGOING)</option>

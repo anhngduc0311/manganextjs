@@ -1,11 +1,13 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/lib/auth-config";
+import { authServerCallbacks } from "@/lib/auth-server-callbacks";
 import { authService } from "@/services/auth.service";
 import { loginSchema } from "@/types/schemas";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: authServerCallbacks,
   providers: [
     Credentials({
       credentials: {

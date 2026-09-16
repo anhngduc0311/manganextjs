@@ -9,7 +9,6 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const { nextUrl } = req;
-  const role = req.auth?.user?.role;
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
 
   if (nextUrl.pathname.startsWith("/admin")) {
@@ -18,9 +17,7 @@ export default auth((req) => {
       loginUrl.searchParams.set("next", nextUrl.pathname);
       return Response.redirect(loginUrl);
     }
-    if (role !== "ADMIN" && role !== "MODERATOR") {
-      return Response.redirect(new URL("/", nextUrl));
-    }
+    // The server layout/actions authorize against the current database role.
   }
 
   if (CRAWLER_PATHS.some((p) => nextUrl.pathname.startsWith(p))) {

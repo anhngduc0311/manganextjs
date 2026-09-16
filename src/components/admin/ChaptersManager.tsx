@@ -2,17 +2,8 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Layers,
-  Eye,
-  ExternalLink,
-  BookOpen,
-  Search,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Edit2, Trash2, Layers, Eye, ExternalLink, Search } from "lucide-react";
 import { ChapterModalForm, type ChapterFormData } from "./ChapterModalForm";
 import { deleteChapterAction } from "@/actions/comic.actions";
 import { toast } from "@/stores/toast-store";

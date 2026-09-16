@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       try {
         await redisRest.sadd(redisKey, clientId);
         await redisRest.expire(redisKey, 30);
-      } catch (err) {
+      } catch {
         // Fallback silently if Redis error
       }
     }

@@ -286,10 +286,10 @@ export async function POST(req: NextRequest) {
       updatedComics: results,
       message: `Đã quét ${mangaList.length} truyện từ MangaDex: Phát hiện và nạp ${totalNewChapters} chương mới cho ${results.length} bộ truyện!`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Scan Updates Error]:", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Lỗi khi quét cập nhật từ MangaDex" },
+      { ok: false, error: (error instanceof Error ? error.message : "Lỗi khi quét cập nhật từ MangaDex") },
       { status: 500 }
     );
   }

@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Bookmark, BookOpen } from "lucide-react";
+
+import { Bookmark } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ComicGrid } from "@/components/comic/ComicGrid";

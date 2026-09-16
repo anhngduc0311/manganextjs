@@ -1,12 +1,12 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { redisRest } from "@/lib/redis";
+import { redisRateLimitClient } from "@/lib/redis";
 
 type Duration = Parameters<typeof Ratelimit.slidingWindow>[1];
 
 function makeLimiter(requests: number, window: Duration, prefix: string) {
-  if (!redisRest) return null;
+  if (!redisRateLimitClient) return null;
   return new Ratelimit({
-    redis: redisRest as any,
+    redis: redisRateLimitClient,
     limiter: Ratelimit.slidingWindow(requests, window),
     prefix: `rl:${prefix}`,
   });

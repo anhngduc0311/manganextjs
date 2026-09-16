@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { gamificationService } from "@/services/gamification.service";
+import { recordReading } from "@/services/history.service";
 import { notificationService } from "@/services/notification.service";
 import { historySchema, userRoleSchema } from "@/types/schemas";
 import { checkRateLimit, writeLimiter } from "@/lib/rate-limiter";
@@ -23,27 +23,8 @@ export async function updateHistoryAction(input: {
   const parsed = historySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Dữ liệu không hợp lệ" };
 
-  const data = parsed.data;
-  await prisma.history.upsert({
-    where: { userId_comicId: { userId: session.user.id, comicId: data.comicId } },
-    create: {
-      userId: session.user.id,
-      comicId: data.comicId,
-      chapterId: data.chapterId,
-      lastReadPage: data.lastReadPage,
-    },
-    update: {
-      chapterId: data.chapterId,
-      lastReadPage: data.lastReadPage,
-      updatedAt: new Date(),
-    },
-  });
-
-  const chapter = await prisma.chapter.findUnique({ where: { id: data.chapterId }, select: { comicId: true } });
-  if (chapter) {
-    await gamificationService.awardExp(session.user.id, 5).catch(() => {});
-    void chapter;
-  }
+  const saved = await recordReading(session.user.id, parsed.data);
+  if (!saved) return { ok: false, error: "Chương không thuộc truyện hoặc không tồn tại" };
   return { ok: true };
 }
 

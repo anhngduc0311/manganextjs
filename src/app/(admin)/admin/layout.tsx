@@ -27,7 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     username: session.user.name || session.user.email?.split("@")[0] || "Admin",
     email: session.user.email || "",
     role: session.user.role,
-    level: (session.user as any).level || 1,
+    level: 1,
     avatar: session.user.image,
   };
 

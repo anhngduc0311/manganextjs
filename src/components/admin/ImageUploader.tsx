@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Image from "next/image";
-import { UploadCloud, X, ArrowUp, ArrowDown, Loader2, Image as ImageIcon, CheckCircle2 } from "lucide-react";
+import { UploadCloud, X, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { toast } from "@/stores/toast-store";
 
 export interface ImageUploaderProps {
@@ -90,9 +90,9 @@ export function ImageUploader({
         onChange(uploadedUrls[0]);
         toast.success("Đã tải ảnh lên thành công! ✅");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Upload error:", err);
-      toast.error(err.message || "Có lỗi xảy ra trong quá trình tải ảnh");
+      toast.error((err instanceof Error ? err.message : "Có lỗi xảy ra trong quá trình tải ảnh"));
     } finally {
       setUploading(false);
       setProgress(0);

@@ -60,7 +60,7 @@ describe("Phase 3 - Auth.js Config Callbacks", () => {
       image: "https://avatar.com/pic.jpg",
     };
 
-    const result = (authConfig.callbacks?.jwt as any)?.({ token, user, trigger: "signIn", account: null });
+    const result = authConfig.callbacks.jwt({ token, user, trigger: "signIn", account: null });
     expect(result).toEqual({
       id: "user-123",
       role: "MODERATOR",

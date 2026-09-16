@@ -18,6 +18,10 @@ export interface UnifiedRedisClient {
 
 const tcpUrl = env.REDIS_URL || env.UPSTASH_REDIS_URL_TCP;
 
+export const redisRateLimitClient = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
+  ? new UpstashRedis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
+
 let tcpRedis: RedisTcp | null = null;
 
 function getOrCreateTcpClient(): RedisTcp | null {
@@ -36,10 +40,7 @@ function createUnifiedClient(): UnifiedRedisClient | null {
 
   // 1. If Upstash REST credentials exist, use Upstash Redis client
   if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    const upstash = new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    });
+    const upstash = redisRateLimitClient!;
     return {
       get: <T>(key: string) => upstash.get<T>(key),
       set: async (key: string, value: unknown, opts?: { ex?: number }): Promise<string | null> => {
@@ -50,23 +51,20 @@ function createUnifiedClient(): UnifiedRedisClient | null {
       },
       del: (...keys: string[]) => upstash.del(...keys),
       incr: (key: string) => upstash.incr(key),
-      scan: (cursor: string | number, opts?: { match?: string; count?: number }) =>
-        upstash.scan(cursor, opts as any) as any,
-      sadd: (key: string, ...members: string[]) => (upstash.sadd as any)(key, ...members),
-      srem: (key: string, ...members: string[]) => (upstash.srem as any)(key, ...members),
+      scan: async (cursor: string | number, opts?: { match?: string; count?: number }) => {
+        const [next, keys] = await upstash.scan(cursor, { ...opts, withType: false });
+        return [String(next), keys];
+      },
+      sadd: (key: string, ...members: string[]) => members.length
+        ? upstash.sadd(key, members[0], ...members.slice(1)) : Promise.resolve(0),
+      srem: (key: string, ...members: string[]) => members.length
+        ? upstash.srem(key, ...members) : Promise.resolve(0),
       scard: (key: string) => upstash.scard(key),
       expire: (key: string, seconds: number) => upstash.expire(key, seconds),
       ping: () => upstash.ping(),
       getdel: async <T = unknown>(key: string): Promise<T | null> => {
         try {
-          if (typeof (upstash as any).getdel === "function") {
-            return (await (upstash as any).getdel(key)) as T;
-          }
-          const val = await upstash.get<T>(key);
-          if (val !== null && val !== undefined) {
-            await upstash.del(key);
-          }
-          return val;
+          return await upstash.getdel<T>(key);
         } catch {
           return null;
         }
@@ -145,8 +143,8 @@ function createUnifiedClient(): UnifiedRedisClient | null {
       async getdel<T = unknown>(key: string): Promise<T | null> {
         try {
           // Native GETDEL in Redis 6.2+
-          if (typeof (client as any).getdel === "function") {
-            const raw = await (client as any).getdel(key);
+          if (typeof client.getdel === "function") {
+            const raw = await client.getdel(key);
             if (raw === null || raw === undefined) return null;
             try {
               return JSON.parse(raw) as T;
@@ -179,4 +177,3 @@ export const redisRest: UnifiedRedisClient | null = createUnifiedClient();
 export async function getTcpRedis(): Promise<RedisTcp | null> {
   return getOrCreateTcpClient();
 }
-

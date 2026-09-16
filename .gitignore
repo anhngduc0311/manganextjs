@@ -14,11 +14,7 @@
 
 # Environment variables & secrets (Giữ lại .env.example)
 .env
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.production
+.env.*
 !.env.example
 
 # Debug & Logs
@@ -28,6 +24,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 .pnpm-debug.log*
+*.log
+/logs/
 
 # Diagnostic & Coverage
 coverage/
@@ -60,4 +58,11 @@ Thumbs.db
 
 # Temporary and cache folders
 .temp/
+.tmp/
+/tmp/
 .cache/
+
+# Local crawler progress and database backups
+.mangadex-checkpoint.json
+/.checkpoint/
+/backups/

@@ -184,9 +184,8 @@ run_migrations() {
     if $DOCKER_COMPOSE run --rm --no-deps web npx prisma migrate deploy; then
         log_success "Prisma migrations đã được áp dụng thành công!"
     else
-        log_warning "Lỗi khi chạy 'prisma migrate deploy', đang thử 'prisma db push'..."
-        $DOCKER_COMPOSE run --rm --no-deps web npx prisma db push
-        log_success "Prisma db push hoàn tất!"
+        log_error "Prisma migration thất bại. Dừng triển khai để tránh bỏ qua cập nhật dữ liệu."
+        return 1
     fi
 }
 

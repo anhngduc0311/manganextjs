@@ -4,27 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-function toSlug(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
-
-function normalizeTitle(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .trim();
-}
-
 async function main() {
   console.log("🌱 Starting TruyenKomi Database Seeding...");
 
@@ -33,7 +12,7 @@ async function main() {
   const adminPasswordHash = await hash("Admin@123456");
   const userPasswordHash = await hash("User@123456");
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@truyenkomi.local" },
     create: {
       username: "admin",
@@ -50,7 +29,7 @@ async function main() {
     },
   });
 
-  const demoUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "reader@truyenkomi.local" },
     create: {
       username: "reader_demo",

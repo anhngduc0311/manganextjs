@@ -151,10 +151,10 @@ export async function POST(req: NextRequest) {
       savedChapters: savedChaptersCount,
       message: `Đã nạp thành công truyện "${comic.title}" và lưu ${savedChaptersCount} chương trực tiếp vào CSDL.`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Ingest API Error]:", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Lỗi khi xử lý dữ liệu ingest" },
+      { ok: false, error: (error instanceof Error ? error.message : "Lỗi khi xử lý dữ liệu ingest") },
       { status: 500 }
     );
   }

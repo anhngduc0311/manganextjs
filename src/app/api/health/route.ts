@@ -34,11 +34,11 @@ export async function GET() {
       ok: true,
       latencyMs: Math.round(performance.now() - start),
     };
-  } catch (err: any) {
+  } catch (err) {
     checks.db = {
       ok: false,
       latencyMs: -1,
-      error: err?.message || "DB connection error",
+      error: (err instanceof Error ? err.message : "DB connection error"),
     };
   }
 
@@ -58,11 +58,11 @@ export async function GET() {
         error: "Redis client not configured",
       };
     }
-  } catch (err: any) {
+  } catch (err) {
     checks.redis = {
       ok: false,
       latencyMs: -1,
-      error: err?.message || "Redis ping error",
+      error: (err instanceof Error ? err.message : "Redis ping error"),
     };
   }
 
@@ -75,11 +75,11 @@ export async function GET() {
       latencyMs: Math.round(performance.now() - start),
       error: isMeiliOk ? undefined : "Meilisearch not available",
     };
-  } catch (err: any) {
+  } catch (err) {
     checks.meilisearch = {
       ok: false,
       latencyMs: -1,
-      error: err?.message || "Meilisearch connection error",
+      error: (err instanceof Error ? err.message : "Meilisearch connection error"),
     };
   }
 
@@ -91,11 +91,11 @@ export async function GET() {
       ok: true,
       latencyMs: Math.round(performance.now() - start),
     };
-  } catch (err: any) {
+  } catch (err) {
     checks.r2 = {
       ok: false,
       latencyMs: -1,
-      error: err?.message || "R2 health check error",
+      error: (err instanceof Error ? err.message : "R2 health check error"),
     };
   }
 

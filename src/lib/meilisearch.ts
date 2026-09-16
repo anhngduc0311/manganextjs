@@ -9,7 +9,7 @@ export interface MeiliComicDocument {
   slug: string;
   otherNames?: string | null;
   author?: string | null;
-  status: string;
+  status: "ONGOING" | "COMPLETED" | "DROPPED";
   coverImage: string;
   views: number;
   ratingAvg: number;

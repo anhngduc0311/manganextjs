@@ -3,18 +3,7 @@
 import React, { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Search,
-  Plus,
-  Edit2,
-  Trash2,
-  Layers,
-  Eye,
-  Star,
-  ExternalLink,
-  Filter,
-  RefreshCw,
-} from "lucide-react";
+import { Search, Plus, Edit2, Trash2, Layers, Eye, Star, ExternalLink, RefreshCw } from "lucide-react";
 import { ComicModalForm, type ComicFormData } from "./ComicModalForm";
 import { deleteComicAction, scanMangaDexUpdatesAction } from "@/actions/comic.actions";
 import { toast } from "@/stores/toast-store";

@@ -1,19 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  BookOpen,
-  Layers,
-  Users,
-  MessageSquare,
-  AlertTriangle,
-  Eye,
-  TrendingUp,
-  ArrowRight,
-  Clock,
-  CheckCircle,
-  Flame,
-} from "lucide-react";
+import { BookOpen, Layers, Users, MessageSquare, AlertTriangle, Eye, TrendingUp, ArrowRight, CheckCircle, Flame } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatsCard } from "@/components/admin/StatsCard";
 
@@ -27,7 +15,6 @@ export default async function AdminDashboardPage() {
     totalComics,
     totalChapters,
     totalUsers,
-    totalComments,
     pendingReports,
     topComics,
     latestReports,
@@ -36,7 +23,6 @@ export default async function AdminDashboardPage() {
     prisma.comic.count(),
     prisma.chapter.count(),
     prisma.user.count(),
-    prisma.comment.count(),
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.comic.findMany({
       orderBy: { views: "desc" },
@@ -63,8 +49,6 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  // Aggregate total views
-  const viewsSum = topComics.reduce((acc, c) => acc + Number(c.views), 0);
 
   return (
     <div className="space-y-8">

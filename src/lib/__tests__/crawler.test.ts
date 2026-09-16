@@ -90,7 +90,7 @@ describe("MangaDex Dynamic Category Translation & Extraction", () => {
 
   it("normalizeManga automatically includes tags, demographics, and format/country", async () => {
     const { mangadexService } = await import("@/services/mangadex.service");
-    const mockManga: any = {
+    const mockManga: Parameters<typeof mangadexService.normalizeManga>[0] = {
       id: "uuid-1234",
       type: "manga",
       attributes: {
@@ -149,8 +149,8 @@ describe("Crawler Worker - processChapterJob", () => {
       },
     };
 
-    const spyTransaction = vi.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) => {
-      return cb(mockTx);
+    const spyTransaction = vi.spyOn(prisma, "$transaction").mockImplementation(async (cb) => {
+      return cb(mockTx as unknown as import("@prisma/client").Prisma.TransactionClient);
     });
 
     const result = await processChapterJob({
@@ -188,7 +188,7 @@ describe("Crawler Worker - processChapterJob", () => {
     const spyFindUnique = vi.spyOn(prisma.chapter, "findUnique").mockResolvedValue({
       id: "existing-ch-id",
       _count: { pages: 15 },
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof prisma.chapter.findUnique>>);
 
     const spyTransaction = vi.spyOn(prisma, "$transaction");
 
@@ -210,4 +210,3 @@ describe("Crawler Worker - processChapterJob", () => {
     spyTransaction.mockRestore();
   });
 });
-

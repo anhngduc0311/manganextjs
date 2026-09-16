@@ -28,12 +28,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { prisma } from "../src/lib/prisma";
-import {
-  mangadexService,
-  sleep,
-  translateMangaDexGenre,
-  type NormalizedManga,
-} from "../src/services/mangadex.service";
+import { mangadexService, sleep, translateMangaDexGenre, type NormalizedManga } from "../src/services/mangadex.service";
 import { toSlug, toUnaccent } from "../src/lib/text-normalizer";
 
 const CHECKPOINT_FILE = process.env.CHECKPOINT_FILE || path.join(process.cwd(), ".mangadex-checkpoint.json");
@@ -412,7 +407,7 @@ async function syncSingleManga(
         createdAt: manga.createdAt || new Date().toISOString(),
       },
     ]);
-  } catch (err) {
+  } catch {
     // Non-blocking fallback
   }
 
@@ -459,9 +454,9 @@ export async function scanLatestUpdates(scanLimit = 20): Promise<{
         maxChapters: maxChaptersArg,
       });
 
-      if ((result as any).newChaptersCount > 0) {
+      if ((result.newChaptersCount ?? 0) > 0) {
         updatedCount++;
-        newChaptersTotal += (result as any).newChaptersCount;
+        newChaptersTotal += (result.newChaptersCount ?? 0);
         newPagesTotal += result.pagesCount;
       }
 

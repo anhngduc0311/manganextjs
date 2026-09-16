@@ -499,9 +499,9 @@ export async function scanMangaDexUpdatesAction(limit = 20): Promise<ActionResul
         newChaptersCount: totalNewChapters,
       },
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error("[scanMangaDexUpdatesAction Error]:", err);
-    return { ok: false, error: err.message || "Lỗi khi quét cập nhật truyện" };
+    return { ok: false, error: (err instanceof Error ? err.message : "Lỗi khi quét cập nhật truyện") };
   }
 }
 

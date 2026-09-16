@@ -53,7 +53,7 @@ export const searchService = {
         const meiliRes = await meiliService.search(trimmed, { limit, offset });
         if (meiliRes && meiliRes.hits.length > 0) {
           logger.debug({ took: Date.now() - started, query: trimmed, results: meiliRes.hits.length, engine: "meilisearch" }, "search timing");
-          return meiliRes.hits.map((h: any) => ({
+          return meiliRes.hits.map((h) => ({
             id: h.id,
             title: h.title,
             slug: h.slug,

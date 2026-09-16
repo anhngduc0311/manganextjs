@@ -4,7 +4,7 @@ import React from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useReaderStore, type ReaderMode, type ReaderTheme } from "@/stores/reader-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { Sliders, Sun, Moon, Eye, Zap, BookOpen, FileText, Keyboard } from "lucide-react";
+import { Sun, Moon, Eye, Zap, BookOpen, FileText, Keyboard } from "lucide-react";
 
 export interface ReaderSettingsModalProps {
   isOpen: boolean;

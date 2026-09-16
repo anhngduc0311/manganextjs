@@ -27,7 +27,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const perPage = 24;
   const offset = (page - 1) * perPage;
 
-  let results: any[] = [];
+  let results: Awaited<ReturnType<typeof searchService.searchComics>> = [];
   let total = 0;
 
   if (query) {

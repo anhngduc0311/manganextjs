@@ -1,17 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { commentService } from "@/services/comment.service";
 import { checkRateLimit, writeLimiter } from "@/lib/rate-limiter";
 import { commentSchema } from "@/types/schemas";
 import type { ActionResult, CommentDTO } from "@/types";
-
-async function clientIp(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-}
 
 export async function addCommentAction(input: {
   comicId: string;

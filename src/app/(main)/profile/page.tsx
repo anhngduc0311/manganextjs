@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import Image from "next/image";
-import { User, Trophy, Flame, Bookmark, MessageSquare, Shield, Calendar } from "lucide-react";
+import { Trophy, Flame, Bookmark, MessageSquare, Calendar } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { levelProgress } from "@/lib/leveling";

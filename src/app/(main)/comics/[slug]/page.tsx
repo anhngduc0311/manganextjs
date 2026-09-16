@@ -2,18 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import {
-  BookOpen,
-  Eye,
-  User,
-  Play,
-  ChevronRight,
-  Home,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Layers,
-} from "lucide-react";
+import { BookOpen, Eye, User, Play, ChevronRight, Home, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { comicService } from "@/services/comic.service";

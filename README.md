@@ -275,6 +275,27 @@ Endpoint kiểm tra trạng thái và độ trễ kết nối:
 
 ---
 
+## Cập nhật quyền, thống kê chương và EXP
+
+Trước khi chạy phiên bản mới trên database hiện có, chạy `npx prisma migrate deploy`.
+Migration `20260916093000_repair_chapter_metadata_and_rewards` tính lại số chương,
+khôi phục index trigram và tạo bảng `ReadingReward` để mỗi người chỉ nhận EXP
+một lần cho mỗi chương. Không dùng `prisma db push` thay thế: lệnh đó không chạy
+phần cập nhật dữ liệu của migration.
+
+Migration giữ nguyên EXP hiện có và đánh dấu chương cuối trong lịch sử là đã thưởng.
+Các chương đọc trước đó không còn trong lịch sử không thể được khôi phục chính xác.
+
+`npm test` chạy các unit test. Để chạy kiểm thử PostgreSQL, dùng một database trống
+riêng, đặt `READING_TEST_DATABASE_URL`, `DATABASE_URL` và `DIRECT_URL` cùng trỏ tới
+database đó, rồi chạy:
+
+```sh
+npx vitest run src/lib/__tests__/reading.integration.test.ts
+```
+
+Bộ kiểm thử tự tạo schema và dữ liệu mẫu; cần database trống mới cho mỗi lần chạy.
+
 ## 📋 Runbook Sự Cố Thường Gặp
 
 1. **Lỗi kết nối Neon Postgres:**

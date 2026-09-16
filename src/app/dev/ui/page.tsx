@@ -16,7 +16,7 @@ import { Search, Mail, Sparkles } from "lucide-react";
 export default function UIDevPreviewPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [rateScore, setRateScore] = useState(4.5);
-  const [page, setPage] = useState(1);
+  const page = 1;
 
   return (
     <div className="mx-auto max-w-5xl space-y-12 p-8 text-zinc-100">

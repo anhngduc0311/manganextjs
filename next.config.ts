@@ -32,9 +32,6 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "**.mangadex.network" },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   async headers() {
     return [
       {

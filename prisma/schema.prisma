@@ -44,6 +44,7 @@ model User {
   histories     History[]
   notifications Notification[]
   reports       Report[]
+  readingRewards ReadingReward[]
 
   @@index([email])
   @@index([username])
@@ -79,6 +80,7 @@ model Comic {
 
   @@index([slug])
   @@index([titleUnaccent])
+  @@index([titleUnaccent(ops: raw("gin_trgm_ops"))], type: Gin, map: "comics_title_trgm_idx")
   @@index([views(sort: Desc)])
   @@index([updatedAt(sort: Desc)])
 }
@@ -113,6 +115,8 @@ model Chapter {
   comments      Comment[]
   reports       Report[]
   histories     History[]
+
+  readingRewards ReadingReward[]
 
   @@unique([comicId, chapterNumber])
   @@index([comicId, chapterNumber])
@@ -173,6 +177,16 @@ model History {
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@id([userId, comicId])
+}
+
+model ReadingReward {
+  userId    String
+  chapterId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@id([userId, chapterId])
 }
 
 model ComicRating {

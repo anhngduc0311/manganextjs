@@ -28,10 +28,10 @@ export async function POST(req: Request) {
         key,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Upload presigned URL error:", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Lỗi khi tạo URL tải lên" },
+      { ok: false, error: (error instanceof Error ? error.message : "Lỗi khi tạo URL tải lên") },
       { status: 500 }
     );
   }

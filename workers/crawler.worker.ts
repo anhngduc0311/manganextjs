@@ -1,4 +1,4 @@
-import { Worker, type Job } from "bullmq";
+import { Worker, type Job, type ConnectionOptions } from "bullmq";
 import { prisma } from "@/lib/prisma";
 import { notificationService } from "@/services/notification.service";
 import { processAndUploadChapterPage } from "./image-processor";
@@ -197,7 +197,7 @@ export async function processChapterJob(
   return { chapterId: chapter.id, pagesCount: uploadedPages.length };
 }
 
-export function createCrawlerWorker(connection: any) {
+export function createCrawlerWorker(connection: ConnectionOptions) {
   const worker = new Worker<ChapterJobData>(
     "ingestion",
     async (job) => {

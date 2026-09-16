@@ -3,16 +3,14 @@ import { computeLevel, computeStreak, DAILY_STREAK_BONUS } from "@/lib/leveling"
 
 export const gamificationService = {
   async awardExp(userId: string, amount: number): Promise<{ exp: number; level: number }> {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { exp: true } });
-    if (!user) throw new Error("User khong ton tai");
-    const newExp = user.exp + amount;
-    const newLevel = computeLevel(newExp);
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { exp: newExp, level: newLevel },
-      select: { exp: true, level: true },
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId }, data: { exp: { increment: amount } }, select: { exp: true },
+      });
+      return tx.user.update({
+        where: { id: userId }, data: { level: computeLevel(user.exp) }, select: { exp: true, level: true },
+      });
     });
-    return updated;
   },
 
   async touchDailyStreak(userId: string): Promise<{ streak: number; awarded: boolean; level: number }> {

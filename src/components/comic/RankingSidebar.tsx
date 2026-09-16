@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Trophy, Flame, Eye, Star, Tags, ChevronRight } from "lucide-react";
+import { Trophy, Eye, Tags, ChevronRight } from "lucide-react";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO, CategoryDTO, RankingPeriod } from "@/types";
 

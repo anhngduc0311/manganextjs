@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import Image from "next/image";
-import { Search, Shield, Trophy, Flame, UserCheck, ShieldAlert } from "lucide-react";
+
+import { Search, Trophy, Flame } from "lucide-react";
 import { setUserRoleAction } from "@/actions/user.actions";
 import { toast } from "@/stores/toast-store";
 import type { Role } from "@/types";

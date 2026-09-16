@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Trash2, Shield, Trophy, ExternalLink, Heart, AlertOctagon } from "lucide-react";
+import { Search, Trash2, Heart, AlertOctagon } from "lucide-react";
 import { deleteCommentAction } from "@/actions/comment.actions";
 import { toast } from "@/stores/toast-store";
 
