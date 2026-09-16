@@ -6,7 +6,7 @@ import { ComicGrid } from "@/components/comic/ComicGrid";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import type { ComicCardDTO } from "@/types";
 
-export const revalidate = 60; // ISR cache 60s
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "TruyenKomi — Đọc Truyện Tranh Manhwa, Manga, Manhua Online Hay Nhất",

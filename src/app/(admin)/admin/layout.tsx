@@ -5,6 +5,8 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import type { SessionUser } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Trang Quản Trị — TruyenKomi Admin",
   description: "Hệ thống quản trị nội dung truyện tranh, phân quyền và kiểm duyệt TruyenKomi.",

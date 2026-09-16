@@ -10,3 +10,6 @@ coverage
 .env.local
 .env*.local
 .checkpoint
+backups
+*.sql
+*.sql.gz

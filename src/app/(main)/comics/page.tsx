@@ -5,7 +5,7 @@ import { ComicGrid } from "@/components/comic/ComicGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import type { ComicStatus } from "@/types";
 
-export const revalidate = 60; // ISR cache 60s
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Danh Sách Truyện Tranh — TruyenKomi",

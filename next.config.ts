@@ -19,6 +19,21 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ["@node-rs/argon2", "sharp", "pino", "pino-pretty", "bullmq", "ioredis", "sanitize-html"],
+  outputFileTracingExcludes: {
+    "*": [
+      "node_modules/@swc/**",
+      "node_modules/@esbuild/**",
+      "node_modules/typescript/**",
+      "node_modules/@types/**",
+      "node_modules/vitest/**",
+      "node_modules/prettier/**",
+      "node_modules/eslint/**",
+      "node_modules/@eslint/**",
+      "node_modules/tailwindcss/**",
+      "node_modules/@tailwindcss/**",
+      "node_modules/postcss/**",
+    ],
+  },
   images: {
     formats: ["image/webp", "image/avif"],
     remotePatterns: [

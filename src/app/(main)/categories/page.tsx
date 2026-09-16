@@ -3,6 +3,8 @@ import { Layers, BookOpen, ArrowRight } from "lucide-react";
 import { comicService } from "@/services/comic.service";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Danh Mục Thể Loại Truyện Tranh — TruyenKomi",
   description: "Tổng hợp tất cả các thể loại truyện tranh phong phú nhất: Hành động, Phiêu lưu, Chuyển sinh, Ngôn tình, Trinh thám...",
