@@ -24,7 +24,9 @@ export interface MangaDexMangaItem {
     description: Record<string, string>;
     status: "ongoing" | "completed" | "hiatus" | "cancelled";
     year?: number;
-    contentRating: "safe" | "suggestive" | "erotica" | "pornographic";
+    contentRating?: "safe" | "suggestive" | "erotica" | "pornographic";
+    publicationDemographic?: "shounen" | "shoujo" | "seinen" | "josei" | null;
+    originalLanguage?: string;
     tags: Array<{
       id: string;
       type: string;
@@ -88,6 +90,104 @@ export interface NormalizedChapter {
   title: string;
   publishedAt: string;
   pageCount: number;
+}
+
+export const MANGADEX_GENRE_MAP: Record<string, string> = {
+  // Genres
+  Action: "Hành Động",
+  Adventure: "Phiêu Lưu",
+  Comedy: "Hài Hước",
+  Drama: "Kịch Tính",
+  Fantasy: "Giả Tưởng",
+  Horror: "Kinh Dị",
+  Mystery: "Bí Ẩn",
+  Psychological: "Tâm Lý",
+  Romance: "Lãng Mạn",
+  "Sci-Fi": "Khoa Học Viễn Tưởng",
+  "Slice of Life": "Đời Thường",
+  Sports: "Thể Thao",
+  Supernatural: "Siêu Nhiên",
+  Thriller: "Giật Gân",
+  Tragedy: "Bi Kịch",
+
+  // Themes
+  Aliens: "Người Ngoài Hành Tinh",
+  Animals: "Động Vật",
+  Cooking: "Ẩm Thực",
+  Crime: "Tội Phạm",
+  Crossdressing: "Giả Trang",
+  Delinquents: "Bất Lương",
+  Demons: "Ác Quỷ",
+  Ecchi: "Ecchi",
+  Genderswap: "Hoán Đổi Giới Tính",
+  Ghosts: "Linh Hồn",
+  Gore: "Máu Mê",
+  Harem: "Harem",
+  Historical: "Lịch Sử",
+  Isekai: "Chuyển Sinh",
+  Loli: "Loli",
+  Magic: "Ma Thuật",
+  "Martial Arts": "Võ Thuật",
+  Mecha: "Mecha",
+  Medical: "Y Học",
+  Military: "Quân Sự",
+  "Monster Girls": "Nữ Quái Vật",
+  Monsters: "Quái Vật",
+  Music: "Âm Nhạc",
+  Ninja: "Ninja",
+  "Office Workers": "Công Sở",
+  Police: "Cảnh Sát",
+  "Post-Apocalyptic": "Tận Thế",
+  Reincarnation: "Trọng Sinh",
+  "Reverse Harem": "Harem Ngược",
+  Samurai: "Samurai",
+  "School Life": "Học Đường",
+  Shota: "Shota",
+  Superhero: "Siêu Anh Hùng",
+  Survival: "Sinh Tồn",
+  "Time Travel": "Du Hành Thời Gian",
+  Traditional: "Truyền Thống",
+  Vampires: "Ma Cà Rồng",
+  "Video Games": "Trò Chơi Ảo",
+  "Virtual Reality": "Thực Tế Ảo",
+  Zombies: "Zombie",
+
+  // Demographics
+  Shounen: "Shounen",
+  Shoujo: "Shoujo",
+  Seinen: "Seinen",
+  Josei: "Josei",
+
+  // Formats & Countries
+  Adaptation: "Chuyển Thể",
+  Anthology: "Tuyển Tập",
+  "Award Winning": "Đoạt Giải",
+  Doujinshi: "Doujinshi",
+  "Fan Colored": "Fan Tô Màu",
+  "Full Color": "Bản Màu",
+  "Long Strip": "Webtoon",
+  "Official Colored": "Bản Màu Chính Thức",
+  Oneshot: "Oneshot",
+  "Self-Published": "Tự Xuất Bản",
+  "Web Comic": "Webtoon",
+  "4-Koma": "4-Koma",
+  Manhwa: "Manhwa",
+  Manhua: "Manhua",
+  Manga: "Manga",
+  Comic: "Truyện Tranh Mỹ",
+  "Việt Nam": "Việt Nam",
+};
+
+export function translateMangaDexGenre(rawTag: string): string {
+  if (!rawTag) return "";
+  const trimmed = rawTag.trim();
+  if (MANGADEX_GENRE_MAP[trimmed]) return MANGADEX_GENRE_MAP[trimmed];
+
+  const lower = trimmed.toLowerCase();
+  for (const [key, val] of Object.entries(MANGADEX_GENRE_MAP)) {
+    if (key.toLowerCase() === lower) return val;
+  }
+  return trimmed;
 }
 
 const BASE_API = "https://api.mangadex.org";
@@ -253,15 +353,46 @@ export const mangadexService = {
     if (attr.status === "completed") status = "COMPLETED";
     else if (attr.status === "cancelled" || attr.status === "hiatus") status = "DROPPED";
 
-    // Extract tags / genres
+    // Extract tags / genres dynamically
     const categories: string[] = [];
+    const seen = new Set<string>();
+
+    const addCategory = (name?: string | null) => {
+      if (!name) return;
+      const clean = name.trim();
+      if (clean && !seen.has(clean.toLowerCase())) {
+        seen.add(clean.toLowerCase());
+        categories.push(clean);
+      }
+    };
+
+    // 1. Tags from MangaDex
     if (attr.tags) {
       for (const tag of attr.tags) {
         const tagName = tag.attributes?.name?.vi || tag.attributes?.name?.en || Object.values(tag.attributes?.name || {})[0];
         if (typeof tagName === "string" && tagName.trim()) {
-          categories.push(tagName.trim());
+          addCategory(tagName.trim());
         }
       }
+    }
+
+    // 2. Publication Demographic
+    if (attr.publicationDemographic) {
+      const demo = attr.publicationDemographic.toLowerCase();
+      if (demo === "shounen") addCategory("Shounen");
+      else if (demo === "shoujo") addCategory("Shoujo");
+      else if (demo === "seinen") addCategory("Seinen");
+      else if (demo === "josei") addCategory("Josei");
+    }
+
+    // 3. Country / Format from originalLanguage
+    if (attr.originalLanguage) {
+      const lang = attr.originalLanguage.toLowerCase();
+      if (lang === "ko") addCategory("Manhwa");
+      else if (lang === "zh" || lang === "zh-hk") addCategory("Manhua");
+      else if (lang === "ja") addCategory("Manga");
+      else if (lang === "vi") addCategory("Việt Nam");
+      else if (lang === "en") addCategory("Comic");
     }
 
     return {

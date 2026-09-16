@@ -3,6 +3,7 @@ import { Queue } from "bullmq";
 import { prisma } from "@/lib/prisma";
 import { getTcpRedis } from "@/lib/redis";
 import { comicService } from "@/services/comic.service";
+import { translateMangaDexGenre } from "@/services/mangadex.service";
 import { toSlug } from "@/lib/text-normalizer";
 import { ingestSchema } from "@/types/schemas";
 import type { ChapterJobData } from "@/../workers/crawler.worker";
@@ -51,17 +52,25 @@ export async function POST(req: NextRequest) {
   const { comic: comicData, chapters: chaptersData } = parsed.data;
 
   try {
-    // 3. Upsert Categories
-    const categoryRecords = await Promise.all(
-      comicData.categories.map(async (catName) => {
-        const slug = toSlug(catName);
-        return prisma.category.upsert({
-          where: { slug },
-          create: { name: catName, slug },
-          update: { name: catName },
-        });
-      })
-    );
+    // 3. Upsert Categories dynamically
+    const uniqueSlugs = new Set<string>();
+    const categoryRecords: Array<{ id: string }> = [];
+
+    for (const rawCat of comicData.categories) {
+      if (!rawCat || !rawCat.trim()) continue;
+      const catName = translateMangaDexGenre(rawCat);
+      const slug = toSlug(catName);
+      if (!slug || uniqueSlugs.has(slug)) continue;
+      uniqueSlugs.add(slug);
+
+      const record = await prisma.category.upsert({
+        where: { slug },
+        create: { name: catName, slug, description: `Thể loại truyện tranh ${catName}` },
+        update: { name: catName },
+        select: { id: true },
+      });
+      categoryRecords.push(record);
+    }
 
     // 4. Synchronously Upsert Comic Metadata
     const comicSlug = comicData.slug || toSlug(comicData.title);

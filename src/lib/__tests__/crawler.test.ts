@@ -76,3 +76,58 @@ describe("Phase 8 - Ingestion Pipeline & Image Processor", () => {
     expect(metadata.height).toBe(1);
   });
 });
+
+describe("MangaDex Dynamic Category Translation & Extraction", () => {
+  it("translates known MangaDex tags into Vietnamese and handles unmapped tags gracefully", async () => {
+    const { translateMangaDexGenre } = await import("@/services/mangadex.service");
+    expect(translateMangaDexGenre("Action")).toBe("Hành Động");
+    expect(translateMangaDexGenre("isekai")).toBe("Chuyển Sinh");
+    expect(translateMangaDexGenre("Martial Arts")).toBe("Võ Thuật");
+    expect(translateMangaDexGenre("Slice of Life")).toBe("Đời Thường");
+    expect(translateMangaDexGenre("Shounen")).toBe("Shounen");
+    expect(translateMangaDexGenre("Custom New Genre")).toBe("Custom New Genre");
+  });
+
+  it("normalizeManga automatically includes tags, demographics, and format/country", async () => {
+    const { mangadexService } = await import("@/services/mangadex.service");
+    const mockManga: any = {
+      id: "uuid-1234",
+      type: "manga",
+      attributes: {
+        title: { en: "Solo Leveling", vi: "Tôi Thăng Cấp Một Mình" },
+        altTitles: [{ ko: "나 혼자만 레벨업" }],
+        description: { vi: "Mô tả truyện" },
+        status: "completed",
+        publicationDemographic: "shounen",
+        originalLanguage: "ko",
+        tags: [
+          {
+            id: "tag-1",
+            type: "tag",
+            attributes: { name: { en: "Action" }, group: "genre" },
+          },
+          {
+            id: "tag-2",
+            type: "tag",
+            attributes: { name: { en: "Fantasy" }, group: "genre" },
+          },
+        ],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-02T00:00:00Z",
+      },
+      relationships: [
+        { id: "author-1", type: "author", attributes: { name: "Chugong" } },
+      ],
+    };
+
+    const normalized = mangadexService.normalizeManga(mockManga);
+    expect(normalized.title).toBe("Tôi Thăng Cấp Một Mình");
+    expect(normalized.status).toBe("COMPLETED");
+    expect(normalized.author).toBe("Chugong");
+    expect(normalized.categories).toContain("Action");
+    expect(normalized.categories).toContain("Fantasy");
+    expect(normalized.categories).toContain("Shounen");
+    expect(normalized.categories).toContain("Manhwa");
+  });
+});
+

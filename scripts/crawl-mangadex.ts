@@ -23,7 +23,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { prisma } from "../src/lib/prisma";
-import { mangadexService, sleep, type NormalizedManga } from "../src/services/mangadex.service";
+import {
+  mangadexService,
+  sleep,
+  translateMangaDexGenre,
+  type NormalizedManga,
+} from "../src/services/mangadex.service";
 import { toSlug, toUnaccent } from "../src/lib/text-normalizer";
 
 const CHECKPOINT_FILE = path.join(process.cwd(), ".mangadex-checkpoint.json");
@@ -79,42 +84,16 @@ const qualityArg = (getArg("quality", "original") as "original" | "dataSaver");
 const limitArg = isAll ? 99999 : parseInt(getArg("limit", "10"), 10);
 const maxChaptersArg = getArg("max-chapters") ? parseInt(getArg("max-chapters"), 10) : undefined;
 
-// Genre Tag Mapping to Vietnamese Friendly Names
-const genreMapping: Record<string, string> = {
-  Action: "Hành Động",
-  Adventure: "Phiêu Lưu",
-  Comedy: "Hài Hước",
-  Drama: "Kịch Tính",
-  Fantasy: "Giả Tưởng",
-  Isekai: "Chuyển Sinh",
-  Romance: "Lãng Mạn",
-  "Sci-Fi": "Khoa Học Viễn Tưởng",
-  Shounen: "Shounen",
-  Shoujo: "Shoujo",
-  Seinen: "Seinen",
-  Josei: "Josei",
-  "Slice of Life": "Đời Thường",
-  Mystery: "Bí Ẩn",
-  Supernatural: "Siêu Nhiên",
-  "Martial Arts": "Võ Thuật",
-  "School Life": "Học Đường",
-  Horror: "Kinh Dị",
-  Psychological: "Tâm Lý",
-  Historical: "Lịch Sử",
-  Tragedy: "Bi Kịch",
-  Mecha: "Mecha",
-  Sports: "Thể Thao",
-  Harem: "Harem",
-  Ecchi: "Ecchi",
-};
-
 async function getOrCreateCategories(tags: string[]): Promise<string[]> {
   const categoryIds: string[] = [];
+  const seenSlugs = new Set<string>();
 
   for (const rawTag of tags) {
-    const vietnameseName = genreMapping[rawTag] || rawTag;
+    if (!rawTag || !rawTag.trim()) continue;
+    const vietnameseName = translateMangaDexGenre(rawTag);
     const slug = toSlug(vietnameseName);
-    if (!slug) continue;
+    if (!slug || seenSlugs.has(slug)) continue;
+    seenSlugs.add(slug);
 
     try {
       const category = await prisma.category.upsert({
@@ -226,6 +205,10 @@ async function syncSingleManga(
       coverImage: manga.coverUrl,
       description: manga.description || undefined,
       updatedAt: new Date(),
+      categories: {
+        deleteMany: {},
+        create: categoryIds.map((categoryId) => ({ categoryId })),
+      },
     },
     select: { id: true, slug: true, title: true },
   });
