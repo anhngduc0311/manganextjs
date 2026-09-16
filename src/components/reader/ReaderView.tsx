@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useReaderStore } from "@/stores/reader-store";
 import { useReaderSettings } from "@/hooks/use-reader-settings";
-import { useOfflineStorage } from "@/hooks/use-offline-storage";
+import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { WebtoonReader } from "./WebtoonReader";
 import { PageFlipReader } from "./PageFlipReader";
-import { DoubleRTLReader } from "./DoubleRTLReader";
 import type { ChapterPageDTO } from "@/types";
 
 export interface ReaderViewProps {
@@ -23,34 +22,9 @@ export function ReaderView({
   pages,
   prevChapterNumber,
   nextChapterNumber,
-  chapterId,
 }: ReaderViewProps) {
   const router = useRouter();
   const { mode, currentPage, setCurrentPage } = useReaderStore();
-  const { getOfflineChapter } = useOfflineStorage();
-  const [offlineBlobUrls, setOfflineBlobUrls] = useState<Record<number, string>>({});
-
-  useEffect(() => {
-    let active = true;
-    if (chapterId) {
-      getOfflineChapter(chapterId).then((data) => {
-        if (active && data && data.pages && data.pages.length > 0) {
-          const map: Record<number, string> = {};
-          data.pages.forEach((blob, idx) => {
-            map[idx] = URL.createObjectURL(blob);
-          });
-          setOfflineBlobUrls(map);
-        }
-      });
-    }
-
-    return () => {
-      active = false;
-      Object.values(offlineBlobUrls).forEach((url) => {
-        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-      });
-    };
-  }, [chapterId, getOfflineChapter]);
 
   const handleNextChapter = () => {
     if (nextChapterNumber !== null && nextChapterNumber !== undefined) {
@@ -73,21 +47,15 @@ export function ReaderView({
     onPrevChapter: handlePrevChapter,
   });
 
+  // Bind Auto Scroll Loop
+  useAutoScroll();
+
   return (
     <div className="w-full">
-      {mode === "webtoon" && <WebtoonReader pages={pages} offlineBlobUrls={offlineBlobUrls} />}
+      {mode === "webtoon" && <WebtoonReader pages={pages} />}
       {mode === "single" && (
         <PageFlipReader
           pages={pages}
-          offlineBlobUrls={offlineBlobUrls}
-          onNextChapter={handleNextChapter}
-          onPrevChapter={handlePrevChapter}
-        />
-      )}
-      {mode === "double" && (
-        <DoubleRTLReader
-          pages={pages}
-          offlineBlobUrls={offlineBlobUrls}
           onNextChapter={handleNextChapter}
           onPrevChapter={handlePrevChapter}
         />
@@ -95,4 +63,3 @@ export function ReaderView({
     </div>
   );
 }
-

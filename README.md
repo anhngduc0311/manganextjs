@@ -82,6 +82,28 @@ Chạy worker xử lý nén ảnh & gom batch view (ở terminal riêng):
 npm run worker
 ```
 
+### 6. Đồng Bộ / Crawl Truyện Từ MangaDex
+
+1. Quét TOÀN BỘ truyện tiếng Việt từ mới nhất đến cũ nhất:
+```bash
+npm run crawl:mangadex -- --all
+```
+
+2. Quét thử nghiệm số lượng truyện mong muốn (ví dụ 10 truyện):
+```bash
+npm run crawl:mangadex -- --limit=10
+```
+
+3. Tiếp tục quét từ điểm đã dừng trước đó (Resume):
+```bash
+npm run crawl:mangadex -- --all --resume
+```
+
+4. Bỏ qua các chương/truyện đã có trong CSDL (để tăng tốc độ quét):
+```bash
+npm run crawl:mangadex -- --all --skip-existing
+```
+
 ---
 
 ## 🔑 Tài Khoản Mặc Định (Sau Khi Seed)
@@ -89,7 +111,7 @@ npm run worker
 | Vai Trò | Email | Mật Khẩu | Quyền Hạn |
 | :--- | :--- | :--- | :--- |
 | **Quản Trị Viên (Admin)** | `admin@truyenkomi.local` | `Admin@123456` | Truy cập `/admin`, Quản lý truyện, chương, thể loại, user, comment, report |
-| **Độc Giả Mẫu (Reader)** | `reader@truyenkomi.local` | `User@123456` | Đọc truyện, bình luận, đánh giá sao, theo dõi, tải offline |
+| **Độc Giả Mẫu (Reader)** | `reader@truyenkomi.local` | `User@123456` | Đọc truyện, bình luận, đánh giá sao, theo dõi truyện |
 
 ---
 

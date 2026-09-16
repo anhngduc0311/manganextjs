@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { User, LogOut, Shield, Bookmark, History, Download, Flame, Trophy } from "lucide-react";
+import { User, LogOut, Shield, Bookmark, History, Flame, Trophy } from "lucide-react";
 import { logoutAction } from "@/actions/auth.actions";
 import type { Role } from "@/types";
 
@@ -111,13 +111,6 @@ export function UserNav({ user }: UserNavProps) {
               className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
             >
               <History className="h-3.5 w-3.5 text-zinc-400" /> Lịch sử đọc
-            </Link>
-            <Link
-              href="/offline"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
-            >
-              <Download className="h-3.5 w-3.5 text-zinc-400" /> Tủ truyện Offline
             </Link>
 
             {isAdminOrMod && (

@@ -8,13 +8,12 @@ import type { ChapterPageDTO } from "@/types";
 
 export interface PageFlipReaderProps {
   pages: ChapterPageDTO[];
-  offlineBlobUrls?: Record<number, string>;
   onNextChapter?: () => void;
   onPrevChapter?: () => void;
 }
 
-export function PageFlipReader({ pages, offlineBlobUrls, onNextChapter, onPrevChapter }: PageFlipReaderProps) {
-  const { currentPage, setCurrentPage, brightness } = useReaderStore();
+export function PageFlipReader({ pages, onNextChapter, onPrevChapter }: PageFlipReaderProps) {
+  const { currentPage, setCurrentPage, brightness, zoom } = useReaderStore();
   const total = pages.length;
 
   if (total === 0) {
@@ -23,7 +22,7 @@ export function PageFlipReader({ pages, offlineBlobUrls, onNextChapter, onPrevCh
 
   const safePage = Math.max(1, Math.min(currentPage, total));
   const currentPageData = pages[safePage - 1];
-  const imageSrc = currentPageData ? (offlineBlobUrls?.[currentPageData.pageIndex] || currentPageData.imageUrl) : "";
+  const imageSrc = currentPageData ? currentPageData.imageUrl : "";
 
   const handlePrev = () => {
     if (safePage > 1) {
@@ -41,13 +40,18 @@ export function PageFlipReader({ pages, offlineBlobUrls, onNextChapter, onPrevCh
     }
   };
 
+  const targetMaxWidth = Math.round((672 * zoom) / 100);
+
   return (
     <div
-      className="relative mx-auto flex min-h-[70vh] w-full max-w-4xl flex-col items-center justify-center p-2"
+      className="relative mx-auto flex min-h-[70vh] w-full max-w-5xl flex-col items-center justify-center p-2 transition-all duration-200"
       style={{ filter: `brightness(${brightness}%)` }}
     >
       {/* Current Page Display */}
-      <div className="relative aspect-[3/4] w-full max-w-2xl overflow-hidden rounded-xl bg-zinc-950 shadow-2xl border border-zinc-800">
+      <div
+        className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-zinc-950 shadow-2xl border border-zinc-800 transition-all duration-200"
+        style={{ maxWidth: `${targetMaxWidth}px` }}
+      >
         {imageSrc ? (
           <Image
             src={imageSrc}

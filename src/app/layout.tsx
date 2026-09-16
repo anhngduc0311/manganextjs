@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { PWARegister } from "@/components/common/PWARegister";
 import { NavigationProgress } from "@/components/common/NavigationProgress";
 import "./globals.css";
 
@@ -9,7 +8,7 @@ export const metadata: Metadata = {
     default: "TruyenKomi — Nền tảng đọc truyện tranh online",
     template: "%s | TruyenKomi",
   },
-  description: "Đọc truyện tranh manga, manhwa, manhua online mượt mà, tốc độ cao, hỗ trợ đọc offline PWA.",
+  description: "Đọc truyện tranh manga, manhwa, manhua online mượt mà, tốc độ cao với kho truyện phong phú.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon-192.png",
@@ -35,10 +34,8 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
-        <PWARegister />
         {children}
       </body>
     </html>
   );
 }
-

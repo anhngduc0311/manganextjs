@@ -4,7 +4,7 @@ import React from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useReaderStore, type ReaderMode, type ReaderTheme } from "@/stores/reader-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { Sliders, Sun, Moon, Eye, Zap, BookOpen, FileText, Columns, Keyboard } from "lucide-react";
+import { Sliders, Sun, Moon, Eye, Zap, BookOpen, FileText, Keyboard } from "lucide-react";
 
 export interface ReaderSettingsModalProps {
   isOpen: boolean;
@@ -12,13 +12,12 @@ export interface ReaderSettingsModalProps {
 }
 
 export function ReaderSettingsModal({ isOpen, onClose }: ReaderSettingsModalProps) {
-  const { mode, setMode, brightness, setBrightness, fitWidth, setFitWidth } = useReaderStore();
+  const { mode, setMode, brightness, setBrightness } = useReaderStore();
   const { theme, setTheme } = useThemeStore();
 
   const modeOptions: { id: ReaderMode; label: string; icon: React.ReactNode; desc: string }[] = [
     { id: "webtoon", label: "Webtoon (Cuộn dọc)", icon: <BookOpen className="h-4 w-4" />, desc: "Cuộn từ trên xuống liên tục" },
     { id: "single", label: "Trang đơn (Lật trang)", icon: <FileText className="h-4 w-4" />, desc: "Click hoặc bấm phím để qua trang" },
-    { id: "double", label: "Song trang (Manga RTL)", icon: <Columns className="h-4 w-4" />, desc: "Đọc 2 trang song song từ Phải sang Trái" },
   ];
 
   const themeOptions: { id: ReaderTheme; label: string; icon: React.ReactNode; color: string }[] = [

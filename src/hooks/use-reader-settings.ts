@@ -32,7 +32,7 @@ export function useReaderSettings({
   }, []);
 
   const cycleMode = useCallback(() => {
-    const modes: ReaderMode[] = ["webtoon", "single", "double"];
+    const modes: ReaderMode[] = ["webtoon", "single"];
     const nextIndex = (modes.indexOf(mode) + 1) % modes.length;
     setMode(modes[nextIndex] ?? "webtoon");
   }, [mode, setMode]);

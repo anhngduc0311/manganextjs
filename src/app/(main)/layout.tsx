@@ -3,9 +3,7 @@ import { auth } from "@/auth";
 import { authService } from "@/services/auth.service";
 import { notificationService } from "@/services/notification.service";
 import { comicService } from "@/services/comic.service";
-import { Navbar } from "@/components/common/Navbar";
-import { Footer } from "@/components/common/Footer";
-import { ToastContainer } from "@/components/ui/Toast";
+import { MainLayoutClient } from "@/components/common/MainLayoutClient";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -34,13 +32,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0f0f12] text-zinc-100 selection:bg-orange-500 selection:text-white">
-      <Navbar user={fullUser} notifications={userNotifications} categories={categories} />
-      <main className="flex-1 mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {children}
-      </main>
-      <Footer />
-      <ToastContainer />
-    </div>
+    <MainLayoutClient
+      user={fullUser}
+      notifications={userNotifications}
+      categories={categories}
+    >
+      {children}
+    </MainLayoutClient>
   );
 }

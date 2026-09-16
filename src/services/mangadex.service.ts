@@ -4,6 +4,17 @@
  * https://api.mangadex.org
  */
 
+export interface MangaDexRelationship {
+  id: string;
+  type: string;
+  related?: string;
+  attributes?: {
+    name?: string;
+    fileName?: string;
+    [key: string]: unknown;
+  };
+}
+
 export interface MangaDexMangaItem {
   id: string;
   type: string;
@@ -26,11 +37,7 @@ export interface MangaDexMangaItem {
     updatedAt: string;
     latestUploadedChapter?: string;
   };
-  relationships: Array<{
-    id: string;
-    type: string;
-    attributes?: Record<string, any>;
-  }>;
+  relationships: MangaDexRelationship[];
 }
 
 export interface MangaDexChapterItem {
@@ -49,11 +56,7 @@ export interface MangaDexChapterItem {
     pages: number;
     version: number;
   };
-  relationships: Array<{
-    id: string;
-    type: string;
-    attributes?: Record<string, any>;
-  }>;
+  relationships: MangaDexRelationship[];
 }
 
 export interface MangaDexAtHomeResponse {
@@ -130,12 +133,13 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries
       }
 
       return response;
-    } catch (err: any) {
+    } catch (err: unknown) {
       attempt++;
       if (attempt >= maxRetries) {
         throw err;
       }
-      console.warn(`[MangaDex API] Request failed (${err.message}). Retrying in ${attempt * 1500}ms...`);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[MangaDex API] Request failed (${msg}). Retrying in ${attempt * 1500}ms...`);
       await sleep(attempt * 1500);
     }
   }
@@ -227,12 +231,13 @@ export const mangadexService = {
 
     for (const rel of manga.relationships) {
       if ((rel.type === "author" || rel.type === "artist") && rel.attributes?.name) {
-        if (!authors.includes(rel.attributes.name)) {
-          authors.push(rel.attributes.name);
+        const authorName = rel.attributes.name.trim();
+        if (authorName && !authors.includes(authorName)) {
+          authors.push(authorName);
         }
       }
       if (rel.type === "cover_art" && rel.attributes?.fileName) {
-        coverFileName = rel.attributes.fileName;
+        coverFileName = rel.attributes.fileName.trim();
       }
     }
 
@@ -252,9 +257,9 @@ export const mangadexService = {
     const categories: string[] = [];
     if (attr.tags) {
       for (const tag of attr.tags) {
-        const tagName = tag.attributes?.name?.en || Object.values(tag.attributes?.name || {})[0];
-        if (tagName) {
-          categories.push(tagName);
+        const tagName = tag.attributes?.name?.vi || tag.attributes?.name?.en || Object.values(tag.attributes?.name || {})[0];
+        if (typeof tagName === "string" && tagName.trim()) {
+          categories.push(tagName.trim());
         }
       }
     }
@@ -346,7 +351,7 @@ export const mangadexService = {
     chapterId: string;
     pages: Array<{ pageIndex: number; imageUrl: string }>;
   }> {
-    const url = `${BASE_API}/at-home/server/${chapterId}`;
+    const url = `${BASE_API}/at-home/server/${chapterId}?forcePort443=true`;
     const res = await fetchWithRetry(url, {}, 5, 500);
     const json: MangaDexAtHomeResponse = await res.json();
 

@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { chapterService } from "@/services/chapter.service";
@@ -75,52 +75,8 @@ export default async function ChapterReaderPage({ params }: ReaderPageProps) {
   const pageImageUrls = data.pages.map((p) => p.imageUrl);
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Top Breadcrumb Nav */}
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-3 text-xs text-zinc-400">
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/comics/${data.comic.slug}`}
-            className="flex items-center gap-1 font-semibold text-zinc-200 hover:text-orange-400 transition"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span className="truncate max-w-[200px] sm:max-w-xs">{data.comic.title}</span>
-          </Link>
-          <span>/</span>
-          <span className="font-bold text-orange-400">Chương {data.chapter.chapterNumber}</span>
-        </div>
-
-        <Link
-          href={`/comics/${data.comic.slug}`}
-          className="flex items-center gap-1 rounded-lg bg-zinc-800/80 px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
-        >
-          <BookOpen className="h-3.5 w-3.5 text-orange-400" />
-          <span>Danh sách chương</span>
-        </Link>
-      </div>
-
-      {/* Chapter Reader View (Webtoon / Single / RTL) */}
-      <div className="min-h-[60vh]">
-        <ReaderView
-          comicSlug={data.comic.slug}
-          chapterId={data.chapter.id}
-          pages={data.pages}
-          prevChapterNumber={data.prevChapterNumber}
-          nextChapterNumber={data.nextChapterNumber}
-        />
-      </div>
-
-      {/* Chapter Comments Section */}
-      <section className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-xl">
-        <CommentList
-          comicId={data.comic.id}
-          chapterId={data.chapter.id}
-          comments={commentsData.items}
-          isLoggedIn={!!userId}
-        />
-      </section>
-
-      {/* Floating Reader HUD Toolbar */}
+    <div className="min-h-screen bg-black text-zinc-100 pb-20 pt-14">
+      {/* Sticky Top Reader Navigation Bar (TruyenKomi Style) */}
       <ReaderToolbar
         comicSlug={data.comic.slug}
         comicTitle={data.comic.title}
@@ -134,6 +90,80 @@ export default async function ChapterReaderPage({ params }: ReaderPageProps) {
         allChapters={allChapters}
         pageUrls={pageImageUrls}
       />
+
+      {/* Main Chapter Reader Images */}
+      <main className="w-full">
+        <ReaderView
+          comicSlug={data.comic.slug}
+          chapterId={data.chapter.id}
+          pages={data.pages}
+          prevChapterNumber={data.prevChapterNumber}
+          nextChapterNumber={data.nextChapterNumber}
+        />
+      </main>
+
+      {/* Bottom Chapter Switcher Controls */}
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {data.prevChapterNumber !== null && data.prevChapterNumber !== undefined ? (
+            <Link
+              href={`/comics/${data.comic.slug}/chuong-${data.prevChapterNumber}`}
+              className="flex items-center gap-2 rounded-xl bg-zinc-800/90 border border-zinc-700/60 px-4 py-2.5 text-xs font-bold text-zinc-200 hover:bg-zinc-700 hover:text-white transition shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Chương trước</span>
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800/40 px-4 py-2.5 text-xs font-bold text-zinc-600 cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Chương trước</span>
+            </button>
+          )}
+
+          <Link
+            href={`/comics/${data.comic.slug}`}
+            className="flex items-center gap-2 rounded-xl bg-zinc-800/90 border border-zinc-700/60 px-4 py-2.5 text-xs font-bold text-zinc-200 hover:bg-zinc-700 hover:text-white transition shadow-sm"
+          >
+            <BookOpen className="h-4 w-4 text-orange-400" />
+            <span>Mục lục</span>
+          </Link>
+
+          {data.nextChapterNumber !== null && data.nextChapterNumber !== undefined ? (
+            <Link
+              href={`/comics/${data.comic.slug}/chuong-${data.nextChapterNumber}`}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:brightness-110 transition"
+            >
+              <span>Chương tiếp</span>
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800/40 px-5 py-2.5 text-xs font-bold text-zinc-600 cursor-not-allowed"
+            >
+              <span>Hết chương</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Chapter Comments Section */}
+      <section id="comments-section" className="mx-auto max-w-3xl px-4 pt-4">
+        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-5 sm:p-6 shadow-2xl backdrop-blur-sm">
+          <h3 className="text-sm font-bold text-zinc-200 mb-4 flex items-center gap-2">
+            💬 Bình luận chương {data.chapter.chapterNumber}
+          </h3>
+          <CommentList
+            comicId={data.comic.id}
+            chapterId={data.chapter.id}
+            comments={commentsData.items}
+            isLoggedIn={!!userId}
+          />
+        </div>
+      </section>
     </div>
   );
 }

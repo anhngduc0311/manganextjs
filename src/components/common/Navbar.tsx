@@ -19,7 +19,6 @@ import {
   Calendar,
   Star,
   Clock,
-  DownloadCloud,
 } from "lucide-react";
 import { PrefetchLink } from "@/components/common/PrefetchLink";
 import { SearchAutocomplete } from "./SearchAutocomplete";
@@ -359,15 +358,6 @@ export function Navbar({ user, notifications, categories = [] }: NavbarProps) {
               <span>Lịch Sử</span>
             </PrefetchLink>
           </nav>
-
-          {/* Right link: Offline Storage */}
-          <PrefetchLink
-            href="/offline"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-orange-400 transition"
-          >
-            <DownloadCloud className="h-3.5 w-3.5" />
-            <span>Tủ Offline PWA</span>
-          </PrefetchLink>
         </div>
       </div>
 

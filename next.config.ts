@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "via.placeholder.com" },
       { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
       { protocol: "https", hostname: "**.r2.dev" },
+      { protocol: "https", hostname: "uploads.mangadex.org" },
+      { protocol: "https", hostname: "**.mangadex.org" },
+      { protocol: "https", hostname: "mangadex.org" },
+      { protocol: "https", hostname: "**.mangadex.network" },
+      { protocol: "https", hostname: "mangadex.network" },
+      { protocol: "http", hostname: "**.mangadex.network" },
     ],
   },
   eslint: {

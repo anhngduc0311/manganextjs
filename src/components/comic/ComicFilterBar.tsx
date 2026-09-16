@@ -53,7 +53,7 @@ export function ComicFilterBar({ categories, totalCount }: ComicFilterBarProps) 
   };
 
   const handleCountryClick = (countrySlug: string) => {
-    let nextGenres = currentGenres.filter((g) => !countrySlugs.includes(g));
+    const nextGenres = currentGenres.filter((g) => !countrySlugs.includes(g));
     if (countrySlug) {
       nextGenres.push(countrySlug);
     }

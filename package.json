@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "crawl:mangadex": "tsx scripts/crawl-mangadex.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

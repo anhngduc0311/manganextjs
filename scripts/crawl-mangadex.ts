@@ -324,8 +324,9 @@ async function syncSingleManga(
 
       // Rate limit cooling pause between chapters
       await sleep(400);
-    } catch (err: any) {
-      console.error(`  ${progressStr} ❌ Lỗi khi lấy chương ${ch.chapterNumber} (MangaDex Chapter ID: ${ch.id}):`, err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ${progressStr} ❌ Lỗi khi lấy chương ${ch.chapterNumber} (MangaDex Chapter ID: ${ch.id}):`, msg);
     }
   }
 
@@ -373,8 +374,9 @@ async function main() {
         maxChapters: maxChaptersArg,
       });
       console.log("\n✅ Hoàn thành crawl 1 truyện thành công!");
-    } catch (e: any) {
-      console.error("❌ Lỗi khi crawl truyện đơn:", e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("❌ Lỗi khi crawl truyện đơn:", msg);
     }
     await prisma.$disconnect();
     return;
@@ -442,8 +444,9 @@ async function main() {
       if (currentOffset >= totalAvailable) {
         hasMore = false;
       }
-    } catch (err: any) {
-      console.error(`❌ Lỗi trong quá trình quét danh sách manga tại offset ${currentOffset}:`, err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`❌ Lỗi trong quá trình quét danh sách manga tại offset ${currentOffset}:`, msg);
       console.log("⏳ Đang tạm dừng 5 giây trước khi thử lại...");
       await sleep(5000);
     }

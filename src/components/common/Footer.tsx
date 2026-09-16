@@ -85,11 +85,6 @@ export function Footer() {
                   Bảng xếp hạng Top
                 </PrefetchLink>
               </li>
-              <li>
-                <PrefetchLink href="/offline" className="hover:text-orange-400 transition">
-                  Tủ truyện Offline PWA
-                </PrefetchLink>
-              </li>
             </ul>
           </div>
 
