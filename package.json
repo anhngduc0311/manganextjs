@@ -19,6 +19,9 @@
     "db:generate": "turbo run db:generate",
     "db:migrate": "npm run db:migrate --workspace=@truyenkomi/database",
     "db:seed": "npm run db:seed --workspace=@truyenkomi/database",
+    "backup:r2": "tsx scripts/r2-backup.ts backup",
+    "backup:list": "tsx scripts/r2-backup.ts list",
+    "backup:restore": "tsx scripts/r2-backup.ts restore",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
