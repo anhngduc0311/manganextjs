@@ -1,68 +1,98 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==========================================
+# TruyenKomi Monorepo .gitignore
+# ==========================================
 
 # Dependencies
-/node_modules
-/.pnp
+node_modules/
+**/node_modules/
+.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # Next.js Build Output
-/.next/
-/out/
-/build
-/dist
+.next/
+**/.next/
+out/
+**/out/
 
-# Environment variables & secrets (Giữ lại .env.example)
+# NestJS / TypeScript / Package Build Output
+dist/
+**/dist/
+build/
+**/build/
+*.tsbuildinfo
+**/*.tsbuildinfo
+next-env.d.ts
+apps/web/next-env.d.ts
+
+# Turborepo / Cache / Temporary Files
+.turbo/
+**/.turbo/
+.cache/
+**/.cache/
+node_modules/.vite/
+node_modules/.cache/
+
+# Environment Variables & Secrets
 .env
-.env.*
+**/.env
+.env*.local
+**/.env*.local
+.env.development
+**/.env.development
+.env.test
+**/.env.test
+.env.production
+**/.env.production
 !.env.example
+!**/.env.example
 
-# Debug & Logs
+# Local Data, Docker Volumes & Backups
+data/
+postgres_data/
+redis_data/
+meili_data/
+backups/
+*.sql
+*.sql.gz
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+.mangadex-checkpoint.json
+*.checkpoint.json
+
+# Logs & Debug Output
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-.pnpm-debug.log*
-*.log
-/logs/
 
-# Diagnostic & Coverage
+# Testing & Code Coverage
 coverage/
+**/coverage/
 .nyc_output/
-
-# Next.js & Turbopack
-.turbo/
-
-# TypeScript cache
-*.tsbuildinfo
-next-env.d.ts
-
-# Prisma
-/prisma/*.db
-/prisma/*.db-journal
 
 # Operating System Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-*.pem
+desktop.ini
 
-# IDE & Editor configs
+# IDEs & Editors
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Temporary and cache folders
-.temp/
-.tmp/
-/tmp/
-.cache/
-
-# Local crawler progress and database backups
-.mangadex-checkpoint.json
-/.checkpoint/
-/backups/

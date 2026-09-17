@@ -1,6 +1,6 @@
-import { prisma } from '../src/lib/prisma';
-import { redisRest } from '../src/lib/redis';
-import { meiliService } from '../src/lib/meilisearch';
+import { prisma } from '@truyenkomi/database';
+import { redisRest } from '../apps/web/src/lib/redis';
+import { meiliService } from '../apps/web/src/lib/meilisearch';
 
 async function main() {
   console.log('--- 1. Checking PostgreSQL ---');

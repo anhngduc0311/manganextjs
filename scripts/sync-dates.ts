@@ -1,9 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { prisma } from "../src/lib/prisma";
-import { mangadexService } from "../src/services/mangadex.service";
-import { cacheService } from "../src/services/cache.service";
+import { prisma } from "@truyenkomi/database";
+import { mangadexService } from "../apps/api/src/modules/crawler/mangadex.service";
 
 async function main() {
   console.log("==================================================");
@@ -76,13 +75,6 @@ async function main() {
 
     console.log(`  ✅ Đã cập nhật "${comic.title}" -> updatedAt: ${latestUpdateTime.toISOString()}`);
   }
-
-  // Clear Redis home-feed cache
-  try {
-    await cacheService.del("home-feed", "comic-list");
-    await cacheService.scanDelete("comic:*");
-    console.log("\n🧹 Đã xóa cache home-feed và comic list.");
-  } catch {}
 
   console.log("\n🎉 Hoàn tất đồng bộ thời gian phát hành!");
   process.exit(0);

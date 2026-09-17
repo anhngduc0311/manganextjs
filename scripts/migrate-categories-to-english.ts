@@ -1,6 +1,6 @@
-import { prisma } from "../src/lib/prisma";
-import { translateMangaDexGenre } from "../src/services/mangadex.service";
-import { toSlug } from "../src/lib/text-normalizer";
+import { prisma } from "@truyenkomi/database";
+import { translateMangaDexGenre } from "../apps/api/src/modules/crawler/mangadex.service";
+import { toSlug } from "../apps/api/src/common/utils/text-normalizer";
 
 async function migrateCategoriesToEnglish() {
   console.log("🔄 Starting migration: Convert all Categories to English...");
@@ -86,7 +86,7 @@ async function migrateCategoriesToEnglish() {
 
   // Update Meilisearch index if configured
   try {
-    const { meiliService } = await import("../src/lib/meilisearch");
+    const { meiliService } = await import("../apps/web/src/lib/meilisearch");
     const comics = await prisma.comic.findMany({
       include: {
         categories: { include: { category: true } },

@@ -27,9 +27,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-import { prisma } from "../src/lib/prisma";
-import { mangadexService, sleep, translateMangaDexGenre, type NormalizedManga } from "../src/services/mangadex.service";
-import { toSlug, toUnaccent } from "../src/lib/text-normalizer";
+import { prisma } from "@truyenkomi/database";
+import { mangadexService, sleep, translateMangaDexGenre, type NormalizedManga } from "../apps/api/src/modules/crawler/mangadex.service";
+import { toSlug, toUnaccent } from "../apps/api/src/common/utils/text-normalizer";
 
 const CHECKPOINT_FILE = process.env.CHECKPOINT_FILE || path.join(process.cwd(), ".mangadex-checkpoint.json");
 
@@ -409,7 +409,7 @@ async function syncSingleManga(
 
   // Index into Meilisearch if configured
   try {
-    const { meiliService } = await import("../src/lib/meilisearch");
+    const { meiliService } = await import("../apps/web/src/lib/meilisearch");
     await meiliService.indexComics([
       {
         id: comic.id,
