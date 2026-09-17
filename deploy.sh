@@ -24,6 +24,10 @@
 
 set -e
 
+# Enable Docker BuildKit & Fast Parallel Layer Caching
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 # ANSI Color Codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'

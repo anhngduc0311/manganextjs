@@ -30,6 +30,10 @@ param (
     [switch]$Status
 )
 
+# Enable Docker BuildKit
+$env:DOCKER_BUILDKIT = "1"
+$env:COMPOSE_DOCKER_CLI_BUILD = "1"
+
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "    🚀 TRUYENKOMI MONOREPO - DOCKER DEPLOYMENT SYSTEM     " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
