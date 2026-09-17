@@ -18,15 +18,14 @@ COPY apps/web/package.json ./apps/web/
 
 # Fast npm install with BuildKit cache mount and no audit/fund overhead
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit --no-fund
+    npm ci --include=dev --prefer-offline --no-audit --no-fund
 
 # ==============================================================================
 # Stage 2: Shared Builder (Prisma Client & Monorepo Packages built ONCE)
 # ==============================================================================
-FROM base AS shared-builder
+FROM deps AS shared-builder
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json package-lock.json turbo.json tsconfig.json ./
+# Preserve root and workspace-local node_modules (including the Nest CLI).
 COPY packages/ ./packages/
 
 # Generate Prisma client & build types + database
