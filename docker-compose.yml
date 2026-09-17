@@ -45,6 +45,7 @@ services:
       - meili_data:/meili_data
 
   api:
+    image: truyenkomi/api:local
     build:
       context: .
       dockerfile: Dockerfile
@@ -70,6 +71,7 @@ services:
         condition: service_healthy
 
   web:
+    image: truyenkomi/web:local
     build:
       context: .
       dockerfile: Dockerfile
@@ -97,6 +99,7 @@ services:
         condition: service_started
 
   crawler:
+    image: truyenkomi/crawler:local
     build:
       context: .
       dockerfile: Dockerfile

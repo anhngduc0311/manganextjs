@@ -359,10 +359,12 @@ case "$ACTION" in
         ;;
 esac
 
-# Build one service at a time, reusing shared layers between images.
+# Build directly to bypass Compose/Bake session forwarding, one image at a time.
+# These tags must match the explicit image names in docker-compose.yml.
 for SERVICE in api web crawler; do
     echo -e "${BLUE}🔨 Đang build image ${SERVICE}...${NC}"
-    $DOCKER_COMPOSE_CMD build "${BUILD_ARGS[@]}" "$SERVICE"
+    $DOCKER_CMD build "${BUILD_ARGS[@]}" --progress=plain \
+        --target "$SERVICE" -t "truyenkomi/$SERVICE:local" -f Dockerfile .
 done
 
 # Start only after every image has built successfully; do not rebuild in parallel.
