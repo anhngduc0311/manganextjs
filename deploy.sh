@@ -24,7 +24,7 @@
 
 set -e
 
-# Enable Docker BuildKit & Fast Parallel Layer Caching
+# Keep BuildKit caching; build service images sequentially below to limit RAM use.
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
@@ -273,6 +273,7 @@ fi
 
 # Action parsing
 ACTION="${1:-up}"
+BUILD_ARGS=()
 
 case "$ACTION" in
     --backup|backup)
@@ -354,13 +355,19 @@ case "$ACTION" in
         ;;
     --build|build)
         echo -e "${CYAN}🔨 Đang build lại toàn bộ Docker images không dùng cache...${NC}"
-        $DOCKER_COMPOSE_CMD build --no-cache
+        BUILD_ARGS+=(--no-cache)
         ;;
 esac
 
-# Start All Services
+# Build one service at a time, reusing shared layers between images.
+for SERVICE in api web crawler; do
+    echo -e "${BLUE}🔨 Đang build image ${SERVICE}...${NC}"
+    $DOCKER_COMPOSE_CMD build "${BUILD_ARGS[@]}" "$SERVICE"
+done
+
+# Start only after every image has built successfully; do not rebuild in parallel.
 echo -e "${BLUE}📦 Đang khởi động 6 dịch vụ (PostgreSQL, Redis, Meilisearch, NestJS API, Next.js Web, Crawler Daemon)...${NC}"
-$DOCKER_COMPOSE_CMD up -d --build
+$DOCKER_COMPOSE_CMD up -d --no-build
 
 # Wait for PostgreSQL
 echo -e "${YELLOW}⏳ Đang kiểm tra kết nối PostgreSQL...${NC}"

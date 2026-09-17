@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# Use Docker's bundled BuildKit frontend; no external frontend image required.
 FROM node:22-alpine AS base
 
 WORKDIR /app
