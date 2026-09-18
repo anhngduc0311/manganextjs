@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TruyenKomi.Api/TruyenKomi.Api.csproj" />
+    <Project Path="src/TruyenKomi.Application/TruyenKomi.Application.csproj" />
+    <Project Path="src/TruyenKomi.Domain/TruyenKomi.Domain.csproj" />
+    <Project Path="src/TruyenKomi.Infrastructure/TruyenKomi.Infrastructure.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,18 @@
+<div class="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased transition-colors duration-200">
+  @if (!isReader && !isAdmin) {
+    <app-navbar></app-navbar>
+  }
+
+  <main class="flex-1">
+    <div [ngClass]="(!isReader && !isAdmin) ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6' : ''">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  @if (!isReader && !isAdmin) {
+    <app-footer></app-footer>
+  }
+
+  <!-- Global Toast Alerts -->
+  <app-toast-container></app-toast-container>
+</div>

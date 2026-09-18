@@ -1,0 +1,6 @@
+@TruyenKomi.Api_HostAddress = http://localhost:5080
+
+GET {{TruyenKomi.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

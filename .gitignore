@@ -2,38 +2,81 @@
 # TruyenKomi Monorepo .gitignore
 # ==========================================
 
-# Dependencies
+# ------------------------------------------
+# Node.js & Package Managers
+# ------------------------------------------
 node_modules/
 **/node_modules/
 .pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
 .yarn/install-state.gz
+.pnp.*
 
-# Next.js Build Output
+# ------------------------------------------
+# .NET / C# Build & Cache Outputs
+# ------------------------------------------
+**/[Bb]in/
+**/[Oo]bj/
+**/[Dd]ebug/
+**/[Rr]elease/
+**/TestResults/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+*.userprefs
+*.pidb
+*.booproj
+*.svclog
+*.PublishWithAspNetCoreTargetManifest.cache
+*.nupkg
+*.snupkg
+
+# ------------------------------------------
+# Next.js / Angular / Frontend Build Outputs
+# ------------------------------------------
 .next/
 **/.next/
 out/
 **/out/
-
-# NestJS / TypeScript / Package Build Output
 dist/
 **/dist/
 build/
 **/build/
+.angular/
+**/.angular/
+out-tsc/
+**/out-tsc/
+.sass-cache/
+__screenshots__/
+
+# ------------------------------------------
+# TypeScript & Cache
+# ------------------------------------------
 *.tsbuildinfo
 **/*.tsbuildinfo
 next-env.d.ts
 apps/web/next-env.d.ts
-
-# Turborepo / Cache / Temporary Files
 .turbo/
 **/.turbo/
 .cache/
 **/.cache/
 node_modules/.vite/
 node_modules/.cache/
+.eslintcache
+.stylelintcache
 
+# ------------------------------------------
 # Environment Variables & Secrets
+# ------------------------------------------
 .env
 **/.env
 .env*.local
@@ -47,7 +90,9 @@ node_modules/.cache/
 !.env.example
 !**/.env.example
 
+# ------------------------------------------
 # Local Data, Docker Volumes & Backups
+# ------------------------------------------
 data/
 postgres_data/
 redis_data/
@@ -62,7 +107,9 @@ backups/
 .mangadex-checkpoint.json
 *.checkpoint.json
 
-# Logs & Debug Output
+# ------------------------------------------
+# Logs & Debugging
+# ------------------------------------------
 logs/
 *.log
 npm-debug.log*
@@ -71,12 +118,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ------------------------------------------
 # Testing & Code Coverage
+# ------------------------------------------
 coverage/
 **/coverage/
 .nyc_output/
 
+# ------------------------------------------
 # Operating System Files
+# ------------------------------------------
 .DS_Store
 .DS_Store?
 ._*
@@ -86,13 +137,27 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# IDEs & Editors
+# ------------------------------------------
+# IDEs, Editors & Visual Studio
+# ------------------------------------------
+.vs/
+**/.vs/
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+**/.idea/
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+*.swp
+*.swo
+*~
+.history/
+**/.history/
+
+# VS Code directory rules
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json

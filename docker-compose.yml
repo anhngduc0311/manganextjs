@@ -32,38 +32,25 @@ services:
       timeout: 5s
       retries: 5
 
-  meilisearch:
-    image: getmeili/meilisearch:v1.12
-    container_name: truyenkomi_meilisearch
-    restart: always
-    environment:
-      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-masterKey12345678}
-      MEILI_ENV: ${MEILI_ENV:-production}
-    ports:
-      - "7700:7700"
-    volumes:
-      - meili_data:/meili_data
-
   api:
-    image: truyenkomi/api:local
+    image: truyenkomi/api:net10
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-      target: api
     container_name: truyenkomi_api
     restart: always
     environment:
-      NODE_ENV: production
-      PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-truyenkomi}?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      MEILISEARCH_HOST: http://meilisearch:7700
-      MEILISEARCH_API_KEY: ${MEILISEARCH_MASTER_KEY:-masterKey12345678}
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production-min32chars}
-      CORS_ORIGIN: https://truyenkomi.site,https://www.truyenkomi.site,http://localhost:3000
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-truyenkomi};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres};"
+      ConnectionStrings__RedisConnection: "redis:6379,abortConnect=false"
+      Jwt__SecretKey: ${JWT_SECRET:-super-secret-jwt-key-change-in-production-min32chars-komi}
+      Jwt__Issuer: "TruyenKomi"
+      Jwt__Audience: "TruyenKomiUsers"
+      Storage__ServiceType: ${STORAGE_TYPE:-Local}
+      Storage__BucketName: ${R2_BUCKET_NAME:-truyenkomi}
+      Storage__PublicDomain: ${R2_PUBLIC_DOMAIN:-https://images.truyenkomi.site}
     ports:
-      - "3001:3001"
+      - "5000:5000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,57 +58,17 @@ services:
         condition: service_healthy
 
   web:
-    image: truyenkomi/web:local
+    image: truyenkomi/web:angular
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
-      target: web
     container_name: truyenkomi_web
     restart: always
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://truyenkomi.site}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-super-secret-authjs-key-change-in-production-min32chars}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://truyenkomi.site/api}
-      INTERNAL_API_URL: http://api:3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-truyenkomi}?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      MEILISEARCH_HOST: http://meilisearch:7700
-      MEILISEARCH_API_KEY: ${MEILISEARCH_MASTER_KEY:-masterKey12345678}
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
-      postgres:
-        condition: service_healthy
-      api:
-        condition: service_started
-
-  crawler:
-    image: truyenkomi/crawler:local
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: crawler
-    container_name: truyenkomi_crawler
-    restart: always
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-truyenkomi}?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      MEILISEARCH_HOST: http://meilisearch:7700
-      MEILISEARCH_API_KEY: ${MEILISEARCH_MASTER_KEY:-masterKey12345678}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_started
+      - api
 
 volumes:
   postgres_data:
   redis_data:
-  meili_data:
